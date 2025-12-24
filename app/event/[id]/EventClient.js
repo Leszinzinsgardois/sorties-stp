@@ -4,8 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-// MODIF: On importe ArrowLeft pour le bouton retour
-import { Calendar, MapPin, TramFront, Users, AlertTriangle, Copy, ArrowLeft, Info } from 'lucide-react'
+import { Calendar, MapPin, TramFront, Users, AlertTriangle, Copy, ArrowLeft, Info, AlertOctagon } from 'lucide-react'
 
 export default function EventClient() {
   const { id } = useParams()
@@ -65,7 +64,6 @@ export default function EventClient() {
       {/* HEADER FIXE */}
       <div className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 pt-safe-top">
          <div className="flex items-center justify-between p-4">
-            {/* MODIF ICI : Lien vers /dashboard avec icône flèche */}
             <Link href="/dashboard" className="bg-slate-100 dark:bg-slate-800 p-2 rounded-full text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition">
                 <ArrowLeft size={20} />
             </Link>
@@ -80,15 +78,51 @@ export default function EventClient() {
       </div>
 
       <div className="max-w-md mx-auto px-4 pt-6">
+
+        {/* ALERTE ANNULATION (ROUGE) */}
+        {event.is_cancelled && (
+            <div className="bg-red-600 text-white p-6 rounded-3xl mb-6 shadow-xl shadow-red-600/20 border-4 border-white dark:border-slate-900 animate-in fade-in slide-in-from-top-4">
+                <div className="flex items-start gap-4">
+                    <div className="bg-white/20 p-3 rounded-2xl shrink-0">
+                        <AlertOctagon size={32} className="text-white"/>
+                    </div>
+                    <div>
+                        <h2 className="text-2xl font-black uppercase tracking-wide mb-1">Soirée Annulée</h2>
+                        <p className="text-red-100 font-medium text-sm mb-4">
+                            Le {new Date(event.cancelled_at).toLocaleDateString()} à {new Date(event.cancelled_at).toLocaleTimeString()}
+                        </p>
+                        <div className="bg-black/20 p-4 rounded-xl backdrop-blur-sm">
+                            <p className="text-xs text-white/60 uppercase font-bold mb-1">Motif de l'organisateur :</p>
+                            <p className="text-lg font-bold">"{event.cancellation_reason}"</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )}
+
+        {/* ALERTE MODIFICATION HORAIRE (ORANGE) */}
+        {!event.is_cancelled && event.initial_start_time && (
+            <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-900/50 p-4 rounded-2xl mb-6 animate-pulse">
+                <div className="flex items-start gap-3">
+                    <AlertTriangle className="text-orange-600 dark:text-orange-400 shrink-0 mt-1" />
+                    <div>
+                        <h3 className="font-bold text-orange-700 dark:text-orange-400">⚠️ Horaire Modifié !</h3>
+                        <p className="text-sm text-orange-800 dark:text-orange-300 mt-1">
+                            Prévu initialement le : <span className="font-bold">{new Date(event.initial_start_time).toLocaleString()}</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        )}
         
         {/* INFO CARD */}
-        <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm p-6 mb-6 space-y-6 border border-slate-100 dark:border-slate-800">
+        <div className={`bg-white dark:bg-slate-900 rounded-3xl shadow-sm p-6 mb-6 space-y-6 border border-slate-100 dark:border-slate-800 ${event.is_cancelled ? 'opacity-50 grayscale' : ''}`}>
             
             <div className="flex justify-between items-center">
                 <span className="text-xs font-bold bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-full">
                     @{event.profiles?.pseudo || 'Anonyme'}
                 </span>
-                {isFull && <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-md font-bold">COMPLET</span>}
+                {isFull && !event.is_cancelled && <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-md font-bold">COMPLET</span>}
             </div>
 
             {/* Date */}
@@ -127,10 +161,10 @@ export default function EventClient() {
 
             {/* Boutons GPS */}
             <div className="grid grid-cols-2 gap-3 pt-2">
-                <a href={`https://www.google.com/maps/search/?api=1&query=${encodedAddress}`} target="_blank" className="flex items-center justify-center gap-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 py-3 rounded-xl text-sm font-bold hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition">
+                <a href={`https://www.google.com/maps/search/?api=1&query=${encodedAddress}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 py-3 rounded-xl text-sm font-bold hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition">
                     Google Maps
                 </a>
-                <a href={`http://maps.apple.com/?q=${encodedAddress}`} target="_blank" className="flex items-center justify-center gap-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 py-3 rounded-xl text-sm font-bold hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition">
+                <a href={`http://maps.apple.com/?q=${encodedAddress}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 py-3 rounded-xl text-sm font-bold hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition">
                     Plans
                 </a>
             </div>
@@ -146,7 +180,7 @@ export default function EventClient() {
              </div>
         </div>
 
-        {/* PARTICIPANTS */}
+        {/* PARTICIPANTS (Caché si annulé ?) Non, on laisse pour voir qui était chaud */}
         <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm p-6 mb-8 border border-slate-100 dark:border-slate-800">
             <div className="flex justify-between items-center mb-4">
                 <h3 className="font-bold text-slate-800 dark:text-white flex items-center gap-2">
@@ -161,7 +195,11 @@ export default function EventClient() {
             </div>
 
             {/* Formulaire RSVP */}
-            {!hasJoined && !isFull ? (
+            {event.is_cancelled ? (
+                <div className="text-center bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 p-4 rounded-xl font-bold">
+                    🚫 Les inscriptions sont fermées.
+                </div>
+            ) : !hasJoined && !isFull ? (
                 <div className="flex gap-2">
                     <input 
                         type="text" placeholder="Ton Prénom..."

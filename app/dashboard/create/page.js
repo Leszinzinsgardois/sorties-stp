@@ -3,8 +3,18 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, MapPin, TramFront, Calendar, Info, Clock, AlignLeft, Type } from 'lucide-react'
+import { ArrowLeft, MapPin, TramFront, Calendar, Info, AlignLeft, Type, ChevronDown } from 'lucide-react'
 import Link from 'next/link'
+
+// Liste officielle (pour cohérence avec la modif)
+const TRAM_OPTIONS = [
+  "Ligne 1",
+  "Ligne 2",
+  "Ligne 3",
+  "Ligne 4",
+  "Ligne 5",
+  "Bus / Autre"
+]
 
 export default function CreateEvent() {
   const router = useRouter()
@@ -42,6 +52,8 @@ export default function CreateEvent() {
       
       // Combiner date et heure pour le format timestamp
       const startDateTime = new Date(`${date}T${time}`).toISOString()
+      
+      // On fixe la fin à +5h par défaut (modifiable via SQL si besoin plus tard)
       const endDateTime = new Date(new Date(`${date}T${time}`).getTime() + 5 * 60 * 60 * 1000).toISOString()
 
       // 2. Insertion dans Supabase
@@ -74,20 +86,20 @@ export default function CreateEvent() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20 transition-colors">
+    <main className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20 transition-colors pt-4">
       
       {/* HEADER */}
-      <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 sticky top-0 z-10 px-4 py-4 flex items-center gap-4">
-        <Link href="/dashboard" className="bg-slate-100 dark:bg-slate-800 p-2 rounded-full text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+      <div className="flex items-center gap-4 px-4 mb-6">
+        <Link href="/dashboard" className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2 rounded-full text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
           <ArrowLeft size={20} />
         </Link>
-        <h1 className="text-xl font-bold text-slate-800 dark:text-white">Créer une sortie</h1>
+        <h1 className="text-2xl font-black text-slate-900 dark:text-white">Créer une sortie</h1>
       </div>
 
-      <form onSubmit={handleSubmit} className="max-w-md mx-auto p-4 space-y-6 mt-2">
+      <form onSubmit={handleSubmit} className="max-w-md mx-auto px-4 space-y-6">
         
         {/* TITRE & DESC */}
-        <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 space-y-5">
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 space-y-5">
           <div>
             <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2 ml-1">Quoi ?</label>
             <div className="flex items-center bg-slate-50 dark:bg-slate-800 rounded-xl px-4 border border-transparent focus-within:border-blue-500 transition">
@@ -112,7 +124,7 @@ export default function CreateEvent() {
         </div>
 
         {/* DATE & HEURE */}
-        <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 space-y-5">
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 space-y-5">
             <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-[-10px] ml-1">Quand ?</label>
             <div className="flex gap-4">
                 <div className="flex-1 bg-slate-50 dark:bg-slate-800 rounded-xl px-4 py-3 border border-transparent focus-within:border-blue-500 flex items-center">
@@ -134,7 +146,7 @@ export default function CreateEvent() {
         </div>
 
         {/* LIEU & TRANSPORT */}
-        <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 space-y-6">
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 space-y-6">
           
           {/* Choix Public / Privé */}
           <div>
@@ -190,22 +202,22 @@ export default function CreateEvent() {
             </div>
           )}
 
-          {/* TRAMWAY */}
+          {/* TRAMWAY (NOUVEAU SELECTEUR) */}
           <div>
             <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2 ml-1">Accès Tram</label>
             <div className="relative bg-slate-50 dark:bg-slate-800 rounded-xl border border-transparent focus-within:border-blue-500 transition">
-              <TramFront size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+              <TramFront size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
               <select 
+                required
                 value={tramStop}
                 onChange={(e) => setTramStop(e.target.value)}
-                className="w-full py-4 pl-12 pr-4 bg-transparent appearance-none outline-none text-slate-900 dark:text-white font-medium"
+                className="w-full py-4 pl-12 pr-10 bg-transparent appearance-none outline-none text-slate-900 dark:text-white font-medium cursor-pointer"
               >
-                <option className="dark:bg-slate-900" value="Ligne 1">🟦 Tram Ligne 1</option>
-                <option className="dark:bg-slate-900" value="Ligne 2">🟧 Tram Ligne 2</option>
-                <option className="dark:bg-slate-900" value="Ligne 3">🟩 Tram Ligne 3</option>
-                <option className="dark:bg-slate-900" value="Ligne 4">🟫 Tram Ligne 4</option>
-                <option className="dark:bg-slate-900" value="Ligne 5">🟪 Tram Ligne 5 </option>
+                {TRAM_OPTIONS.map(opt => (
+                    <option key={opt} value={opt} className="dark:bg-slate-900">{opt}</option>
+                ))}
               </select>
+              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18}/>
             </div>
           </div>
         </div>

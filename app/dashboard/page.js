@@ -4,13 +4,13 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Plus, MapPin, Calendar, Users, Filter, Clock, Archive } from 'lucide-react'
+import { Plus, MapPin, Calendar, Users, Filter, Clock, Archive, Edit3 } from 'lucide-react'
 
 export default function Dashboard() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [events, setEvents] = useState([])
-  const [showArchived, setShowArchived] = useState(false) // État pour le filtre
+  const [showArchived, setShowArchived] = useState(false)
 
   useEffect(() => {
     checkUser()
@@ -27,16 +27,20 @@ export default function Dashboard() {
       .from('events')
       .select('*, participants(count)') 
       .eq('organizer_id', userId)
-      .order('start_time', { ascending: false }) // On trie du plus récent au plus vieux
+      .order('start_time', { ascending: false })
       
     setEvents(data || [])
     setLoading(false)
   }
 
-  // Logique de filtrage
   const filteredEvents = events.filter(event => {
-    if (showArchived) return true // Si on veut tout voir, on retourne tout
-    return event.is_visible // Sinon, seulement les actifs
+    // Si on veut voir l'historique, on retourne tout
+    if (showArchived) return true 
+    
+    // Sinon, on ne veut QUE les événements actifs (visibles ET pas annulés)
+    // Sauf si tu veux voir les annulés récents dans "En cours" ? 
+    // Pour l'instant : on montre tout ce qui est "visible" (non archivé)
+    return event.is_visible 
   })
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 text-slate-500">Chargement...</div>
@@ -44,7 +48,7 @@ export default function Dashboard() {
   return (
     <main className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-24 transition-colors">
       
-      {/* BARRE DE TITRE & FILTRES (Plus de header complexe) */}
+      {/* BARRE DE TITRE & FILTRES */}
       <div className="max-w-md mx-auto px-6 pt-8 pb-4 flex items-end justify-between">
         <div>
             <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
@@ -55,12 +59,11 @@ export default function Dashboard() {
             </p>
         </div>
 
-        {/* Bouton Toggle Filtre */}
         <button 
             onClick={() => setShowArchived(!showArchived)}
             className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition ${showArchived ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400'}`}
         >
-            {showArchived ? <Clock size={14}/> : <Filter size={14}/>}
+            {showArchived ? <Filter size={14}/> : <Clock size={14}/>}
             {showArchived ? 'Masquer Terminés' : 'Afficher tout'}
         </button>
       </div>
@@ -68,7 +71,6 @@ export default function Dashboard() {
       {/* LISTE DES ÉVÉNEMENTS */}
       <div className="p-4 space-y-4 max-w-md mx-auto">
         
-        {/* Cas Vide (Aucun event du tout ou aucun actif) */}
         {filteredEvents.length === 0 ? (
           <div className="text-center py-16 bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-300 dark:border-slate-700 mx-2 animate-in fade-in zoom-in duration-300">
             <div className="bg-blue-50 dark:bg-slate-800 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -90,12 +92,20 @@ export default function Dashboard() {
           </div>
         ) : (
           filteredEvents.map(event => (
-            <div key={event.id} className={`bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border relative hover:scale-[1.02] transition-transform ${!event.is_visible ? 'opacity-70 border-slate-100 dark:border-slate-800 grayscale-[0.5]' : 'border-slate-100 dark:border-slate-800'}`}>
+            <div key={event.id} className={`bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border relative hover:scale-[1.02] transition-transform ${!event.is_visible ? 'opacity-70 border-slate-100 dark:border-slate-800 grayscale-[0.5]' : 'border-slate-100 dark:border-slate-800'} ${event.is_cancelled ? 'border-red-200 dark:border-red-900/30' : ''}`}>
               
               <div className="flex justify-between items-start mb-3">
                 <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100 truncate pr-4">{event.title}</h3>
-                <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide shrink-0 ${event.is_visible ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-slate-100 text-slate-500'}`}>
-                  {event.is_visible ? 'En ligne' : 'Terminé'}
+                
+                {/* LOGIQUE DE BADGE */}
+                <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide shrink-0 
+                  ${event.is_cancelled 
+                    ? 'bg-red-600 text-white' // Rouge si annulé
+                    : event.is_visible 
+                      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' // Vert si actif
+                      : 'bg-slate-100 text-slate-500' // Gris si terminé
+                  }`}>
+                  {event.is_cancelled ? 'Annulé' : (event.is_visible ? 'En ligne' : 'Terminé')}
                 </span>
               </div>
               
@@ -120,16 +130,33 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {/* Si l'événement est actif, bouton bleu. Sinon bouton gris "Voir archives" */}
-              <Link href={`/event/${event.id}`} className={`block text-center w-full font-bold py-3 rounded-xl transition ${event.is_visible ? 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-default'}`}>
-                {event.is_visible ? 'Gérer & Partager' : 'Voir les stats (Archivé)'}
-              </Link>
+              {/* BOUTONS D'ACTION */}
+              <div className="flex gap-2 mt-4">
+                {/* On ne peut modifier que si c'est visible ET pas annulé */}
+                {event.is_visible && !event.is_cancelled && (
+                    <Link href={`/dashboard/edit/${event.id}`} className="p-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition border border-transparent hover:border-slate-300 dark:hover:border-slate-600" title="Modifier">
+                        <Edit3 size={20} />
+                    </Link>
+                )}
+                
+                <Link 
+                    href={`/event/${event.id}`} 
+                    className={`flex-1 flex items-center justify-center font-bold py-3 rounded-xl transition 
+                    ${event.is_cancelled 
+                        ? 'bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-900/30'
+                        : event.is_visible 
+                            ? 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700' 
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-default'}`}
+                >
+                    {event.is_cancelled ? 'Voir Annulation' : (event.is_visible ? 'Gérer & Partager' : 'Voir les stats (Archivé)')}
+                </Link>
+              </div>
+
             </div>
           ))
         )}
       </div>
 
-      {/* FAB CREATE (Toujours accessible) */}
       <Link href="/dashboard/create">
         <button className="fixed bottom-6 right-6 bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 rounded-full shadow-xl shadow-blue-600/40 hover:scale-110 transition-transform z-30">
           <Plus size={32} />
