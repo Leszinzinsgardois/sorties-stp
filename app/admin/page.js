@@ -4,8 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-// Ajout de AlertOctagon pour l'icône d'annulation
-import { Eye, X, ShieldAlert, CheckCircle, MapPin, User, Users, AlertTriangle, ArrowLeft, Ban, Lock, Archive, Database, Search, Filter, ShieldCheck, XCircle, IdCard, Clock, FileText, ScanFace, AlertOctagon } from 'lucide-react'
+import { Eye, X, ShieldAlert, CheckCircle, MapPin, User, Users, AlertTriangle, ArrowLeft, Ban, Archive, Database, Search, Filter, ShieldCheck, XCircle, IdCard, Clock, FileText, ScanFace, AlertOctagon } from 'lucide-react'
 
 export default function AdminPanel() {
   const router = useRouter()
@@ -15,7 +14,7 @@ export default function AdminPanel() {
   const [reports, setReports] = useState([]) 
   const [allEvents, setAllEvents] = useState([]) 
   const [selectedItem, setSelectedItem] = useState(null) 
-  const [selectedLog, setSelectedLog] = useState(null) // Pop-up Log
+  const [selectedLog, setSelectedLog] = useState(null)
   
   const [details, setDetails] = useState({ participants: [], organizer: null, eventReports: [], logsHistory: [] })
   const [loadingDetails, setLoadingDetails] = useState(false)
@@ -42,7 +41,7 @@ export default function AdminPanel() {
   }
 
   async function fetchPendingReports() {
-    // MODIF : On récupère aussi les infos d'annulation dans la relation events()
+    // On récupère les infos d'annulation
     const { data } = await supabase
       .from('reports')
       .select('*, events(title, description, location_name, meeting_point, organizer_id, is_cancelled, cancellation_reason, cancelled_at), profiles(pseudo)')
@@ -74,10 +73,8 @@ export default function AdminPanel() {
     const eventId = type === 'report_ticket' ? item.event_id : item.id
     const organizerId = type === 'report_ticket' ? item.events?.organizer_id : item.organizer_id 
 
-    // 1. Participants
     const { data: participants } = await supabase.from('participants').select('guest_name, user_id, joined_at, profiles(pseudo)').eq('event_id', eventId)
     
-    // 2. Organisateur
     let organizer = item.profiles 
     if (!organizer && organizerId) {
         const { data } = await supabase.from('profiles').select('*').eq('id', organizerId).single()
@@ -87,10 +84,7 @@ export default function AdminPanel() {
         organizer = data
     }
 
-    // 3. Signalements
     const { data: eventReports } = await supabase.from('reports').select('*, profiles(pseudo)').eq('event_id', eventId).order('created_at', { ascending: false })
-
-    // 4. HISTORIQUE DES MODIFICATIONS
     const { data: history } = await supabase.from('event_logs').select('*').eq('event_id', eventId).order('created_at', { ascending: false })
 
     setDetails({ 
@@ -143,13 +137,8 @@ export default function AdminPanel() {
     return matchSearch && matchReport
   })
 
-  // Helper pour récupérer l'objet "Event" qu'il soit dans un report ou direct
-  const getCurrentEvent = () => {
-    if (!selectedItem) return null
-    return selectedItem.type === 'report_ticket' ? selectedItem.events : selectedItem
-  }
-
-  const currentEvent = getCurrentEvent()
+  // Helper pour unifier l'objet event
+  const currentEvent = selectedItem?.type === 'report_ticket' ? selectedItem.events : selectedItem
 
   const getEventDescription = () => {
     return currentEvent?.description
@@ -162,6 +151,7 @@ export default function AdminPanel() {
       
       {/* GAUCHE */}
       <div className="w-full md:w-1/3 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 h-screen overflow-y-auto flex flex-col">
+        {/* ... (Partie Header Gauche inchangée) ... */}
         <div className="sticky top-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-b border-slate-200 dark:border-slate-800 p-4 z-10 space-y-4">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -183,6 +173,7 @@ export default function AdminPanel() {
                 </div>
             )}
         </div>
+
         <div className="flex-1 overflow-y-auto">
             {activeTab === 'reports' && (
                 <div className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -204,10 +195,7 @@ export default function AdminPanel() {
                             <div className="flex justify-between items-start mb-1">
                                 <div className="flex gap-1">
                                     {event.is_banned && <span className="bg-red-100 text-red-600 text-[10px] font-bold px-1.5 rounded uppercase">Banni</span>}
-                                    
-                                    {/* MODIF : Badge Annulé dans la liste */}
                                     {event.is_cancelled && !event.is_banned && <span className="bg-red-100 text-red-600 text-[10px] font-bold px-1.5 rounded uppercase">Annulé</span>}
-                                    
                                     {!event.is_visible && !event.is_banned && !event.is_cancelled && <span className="bg-slate-100 text-slate-500 text-[10px] font-bold px-1.5 rounded uppercase">Terminé</span>}
                                     {event.is_visible && !event.is_cancelled && <span className="bg-green-100 text-green-600 text-[10px] font-bold px-1.5 rounded uppercase">Actif</span>}
                                 </div>
@@ -234,7 +222,7 @@ export default function AdminPanel() {
                         {/* 1. SIGNALEMENTS */}
                         {details.eventReports.length > 0 ? (
                             <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-red-100 dark:border-red-900/30">
-                                <h2 className="text-xl font-bold text-red-600 dark:text-red-400 mb-4 flex items-center gap-2"><AlertTriangle size={24}/> {details.eventReports.length} Signalement(s)</h2>
+                                <h2 className="text-xl font-bold text-red-600 dark:text-red-400 mb-4 flex items-center gap-2"><AlertTriangle size={24}/> {details.eventReports.length} Signalement(s) reçu(s)</h2>
                                 <div className="space-y-3">
                                     {details.eventReports.map((rep) => (
                                         <div key={rep.id} className="bg-red-50 dark:bg-red-900/10 p-4 rounded-xl flex justify-between items-start gap-4">
@@ -278,7 +266,7 @@ export default function AdminPanel() {
                         <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
                             <div className="flex justify-between items-start mb-4"><h3 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2"><MapPin className="text-purple-500"/> L'Événement</h3><button onClick={archiveEvent} className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-red-700 transition flex items-center gap-2"><Archive size={16}/> Archiver</button></div>
                             
-                            {/* MODIF : BLOC D'ANNULATION DANS LES DÉTAILS */}
+                            {/* ALERTE ANNULATION */}
                             {currentEvent?.is_cancelled && (
                                 <div className="bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 p-4 rounded-xl mb-6">
                                     <div className="flex items-start gap-3">
@@ -295,9 +283,9 @@ export default function AdminPanel() {
                             )}
 
                             <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl space-y-3 text-sm text-slate-700 dark:text-slate-300">
-                                <p><span className="font-bold block text-xs text-slate-500 uppercase mb-1">Titre</span> {currentEvent.title || currentEvent.events?.title}</p>
-                                <p><span className="font-bold block text-xs text-slate-500 uppercase mb-1">Lieu & RDV</span> {currentEvent.location_name || currentEvent.events?.location_name} ({currentEvent.meeting_point || currentEvent.events?.meeting_point})</p>
-                                <p><span className="font-bold block text-xs text-slate-500 uppercase mb-1">Date</span> {new Date(currentEvent.start_time || currentEvent.events?.start_time).toLocaleString()}</p>
+                                <p><span className="font-bold block text-xs text-slate-500 uppercase mb-1">Titre</span> {currentEvent?.title}</p>
+                                <p><span className="font-bold block text-xs text-slate-500 uppercase mb-1">Lieu & RDV</span> {currentEvent?.location_name} ({currentEvent?.meeting_point})</p>
+                                <p><span className="font-bold block text-xs text-slate-500 uppercase mb-1">Date</span> {new Date(currentEvent?.start_time).toLocaleString()}</p>
                                 <div className="pt-2 border-t border-slate-200 dark:border-slate-700"><span className="font-bold block text-xs text-slate-500 uppercase mb-1 flex items-center gap-1"><FileText size={12}/> Description</span><p className="italic text-slate-600 dark:text-slate-400 whitespace-pre-line">{getEventDescription() || "Aucune description fournie."}</p></div>
                             </div>
                             <h4 className="font-bold text-sm text-slate-500 uppercase mt-6 mb-3 flex items-center gap-2"><Users size={16} /> Participants ({details.participants.length})</h4>
@@ -309,31 +297,18 @@ export default function AdminPanel() {
                             </div>
                         </div>
 
-                        {/* 4. HISTORIQUE MODIFIÉ AVEC POP-UP */}
+                        {/* 4. HISTORIQUE */}
                         {details.logsHistory.length > 0 && (
                             <div className="bg-slate-100 dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 mt-6">
-                                <h3 className="text-sm font-bold text-slate-500 uppercase mb-4 flex items-center gap-2">
-                                    <FileText size={16}/> Historique des modifications
-                                </h3>
+                                <h3 className="text-sm font-bold text-slate-500 uppercase mb-4 flex items-center gap-2"><FileText size={16}/> Historique des modifications</h3>
                                 <div className="space-y-3">
                                     {details.logsHistory.map(log => (
                                         <div key={log.id} className="text-sm bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700 flex justify-between items-center">
                                             <div>
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <span className={`font-bold text-[10px] px-2 py-0.5 rounded uppercase ${log.change_type === 'CANCEL' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`}>
-                                                        {log.change_type === 'CANCEL' ? 'ANNULATION' : 'MODIFICATION'}
-                                                    </span>
-                                                    <span className="text-slate-400 text-xs">{new Date(log.created_at).toLocaleString()}</span>
-                                                </div>
+                                                <div className="flex items-center gap-2 mb-1"><span className={`font-bold text-[10px] px-2 py-0.5 rounded uppercase ${log.change_type === 'CANCEL' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`}>{log.change_type === 'CANCEL' ? 'ANNULATION' : 'MODIFICATION'}</span><span className="text-slate-400 text-xs">{new Date(log.created_at).toLocaleString()}</span></div>
                                                 <p className="text-slate-700 dark:text-slate-300 font-medium line-clamp-1 opacity-80">{log.details}</p>
                                             </div>
-                                            <button 
-                                                onClick={() => setSelectedLog(log)}
-                                                className="p-2 bg-slate-100 dark:bg-slate-700 text-slate-500 hover:text-blue-600 rounded-lg hover:bg-blue-50 dark:hover:bg-slate-600 transition"
-                                                title="Voir détail"
-                                            >
-                                                <Eye size={18} />
-                                            </button>
+                                            <button onClick={() => setSelectedLog(log)} className="p-2 bg-slate-100 dark:bg-slate-700 text-slate-500 hover:text-blue-600 rounded-lg hover:bg-blue-50 dark:hover:bg-slate-600 transition"><Eye size={18} /></button>
                                         </div>
                                     ))}
                                 </div>
@@ -344,16 +319,14 @@ export default function AdminPanel() {
             </div>
         ) : <div className="h-full flex flex-col items-center justify-center text-slate-400 opacity-50"><ShieldAlert size={64} className="mb-4" /><p className="text-lg font-medium">Sélectionnez un élément</p><p className="text-sm">Inbox pour les urgences, Base de données pour l'historique.</p></div>}
 
-        {/* --- MODALE POP-UP --- */}
+        {/* MODALE LOG */}
         {selectedLog && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
                 <div className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl shadow-2xl p-6 border border-slate-200 dark:border-slate-800 relative animate-in zoom-in-95 duration-200">
                     <button onClick={() => setSelectedLog(null)} className="absolute top-4 right-4 p-2 bg-slate-100 dark:bg-slate-800 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition"><X size={20} /></button>
                     <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">Détail de la modification</h3>
                     <p className="text-xs text-slate-400 mb-6 font-mono">ID: {selectedLog.id} • {new Date(selectedLog.created_at).toLocaleString()}</p>
-                    <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-100 dark:border-slate-800 max-h-[60vh] overflow-y-auto">
-                        <pre className="whitespace-pre-wrap font-sans text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{selectedLog.details}</pre>
-                    </div>
+                    <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-100 dark:border-slate-800 max-h-[60vh] overflow-y-auto"><pre className="whitespace-pre-wrap font-sans text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{selectedLog.details}</pre></div>
                     <div className="mt-6 flex justify-end"><button onClick={() => setSelectedLog(null)} className="px-6 py-2 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition">Fermer</button></div>
                 </div>
             </div>

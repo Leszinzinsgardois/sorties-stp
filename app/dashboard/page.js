@@ -34,13 +34,8 @@ export default function Dashboard() {
   }
 
   const filteredEvents = events.filter(event => {
-    // Si on veut voir l'historique, on retourne tout
     if (showArchived) return true 
-    
-    // Sinon, on ne veut QUE les événements actifs (visibles ET pas annulés)
-    // Sauf si tu veux voir les annulés récents dans "En cours" ? 
-    // Pour l'instant : on montre tout ce qui est "visible" (non archivé)
-    return event.is_visible 
+    return event.is_visible // Montre les actifs (même annulés, tant qu'ils ne sont pas archivés par le temps)
   })
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 text-slate-500">Chargement...</div>
@@ -48,45 +43,33 @@ export default function Dashboard() {
   return (
     <main className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-24 transition-colors">
       
-      {/* BARRE DE TITRE & FILTRES */}
+      {/* BARRE DE TITRE */}
       <div className="max-w-md mx-auto px-6 pt-8 pb-4 flex items-end justify-between">
         <div>
-            <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-                Mes Sorties
-            </h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
-                Gère tes événements.
-            </p>
+            <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Mes Sorties</h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Gère tes événements.</p>
         </div>
-
         <button 
             onClick={() => setShowArchived(!showArchived)}
             className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition ${showArchived ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400'}`}
         >
-            {showArchived ? <Filter size={14}/> : <Clock size={14}/>}
+            {showArchived ? <Clock size={14}/> : <Filter size={14}/>}
             {showArchived ? 'Masquer Terminés' : 'Afficher tout'}
         </button>
       </div>
 
-      {/* LISTE DES ÉVÉNEMENTS */}
+      {/* LISTE */}
       <div className="p-4 space-y-4 max-w-md mx-auto">
-        
         {filteredEvents.length === 0 ? (
           <div className="text-center py-16 bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-300 dark:border-slate-700 mx-2 animate-in fade-in zoom-in duration-300">
             <div className="bg-blue-50 dark:bg-slate-800 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
               {showArchived ? <Archive className="text-slate-400" size={32}/> : <Calendar className="text-blue-500 dark:text-blue-400" size={32} />}
             </div>
-            <h3 className="text-xl font-bold text-slate-800 dark:text-white">
-                {showArchived ? "Aucun historique." : "Rien de prévu ?"}
-            </h3>
-            <p className="text-slate-500 dark:text-slate-400 mt-2 mb-8 max-w-[200px] mx-auto">
-                {showArchived ? "Tu n'as pas encore organisé de soirées passées." : "Lance une soirée pour tes potes dès maintenant."}
-            </p>
+            <h3 className="text-xl font-bold text-slate-800 dark:text-white">{showArchived ? "Aucun historique." : "Rien de prévu ?"}</h3>
+            <p className="text-slate-500 dark:text-slate-400 mt-2 mb-8 max-w-[200px] mx-auto">{showArchived ? "Tu n'as pas encore organisé de soirées passées." : "Lance une soirée pour tes potes dès maintenant."}</p>
             {!showArchived && (
                 <Link href="/dashboard/create">
-                <button className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition">
-                    Créer une sortie
-                </button>
+                <button className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition">Créer une sortie</button>
                 </Link>
             )}
           </div>
@@ -96,15 +79,7 @@ export default function Dashboard() {
               
               <div className="flex justify-between items-start mb-3">
                 <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100 truncate pr-4">{event.title}</h3>
-                
-                {/* LOGIQUE DE BADGE */}
-                <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide shrink-0 
-                  ${event.is_cancelled 
-                    ? 'bg-red-600 text-white' // Rouge si annulé
-                    : event.is_visible 
-                      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' // Vert si actif
-                      : 'bg-slate-100 text-slate-500' // Gris si terminé
-                  }`}>
+                <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide shrink-0 ${event.is_cancelled ? 'bg-red-600 text-white' : event.is_visible ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-slate-100 text-slate-500'}`}>
                   {event.is_cancelled ? 'Annulé' : (event.is_visible ? 'En ligne' : 'Terminé')}
                 </span>
               </div>
@@ -120,7 +95,6 @@ export default function Dashboard() {
                   <span className="text-slate-300 dark:text-slate-600">•</span> 
                   <span className="font-medium text-blue-600 dark:text-blue-400">{event.tram_stop}</span>
                 </div>
-                
                 <div className="flex items-center gap-2">
                   <Users size={16} className="text-slate-400"/>
                   <span className={event.participants?.[0]?.count >= event.max_participants ? "text-red-500 font-bold" : "font-medium text-slate-900 dark:text-white"}>
@@ -130,24 +104,13 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {/* BOUTONS D'ACTION */}
               <div className="flex gap-2 mt-4">
-                {/* On ne peut modifier que si c'est visible ET pas annulé */}
                 {event.is_visible && !event.is_cancelled && (
-                    <Link href={`/dashboard/edit/${event.id}`} className="p-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition border border-transparent hover:border-slate-300 dark:hover:border-slate-600" title="Modifier">
+                    <Link href={`/dashboard/edit/${event.id}`} className="p-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition" title="Modifier">
                         <Edit3 size={20} />
                     </Link>
                 )}
-                
-                <Link 
-                    href={`/event/${event.id}`} 
-                    className={`flex-1 flex items-center justify-center font-bold py-3 rounded-xl transition 
-                    ${event.is_cancelled 
-                        ? 'bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-900/30'
-                        : event.is_visible 
-                            ? 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700' 
-                            : 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-default'}`}
-                >
+                <Link href={`/event/${event.id}`} className={`flex-1 flex items-center justify-center font-bold py-3 rounded-xl transition ${event.is_cancelled ? 'bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400' : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'}`}>
                     {event.is_cancelled ? 'Voir Annulation' : (event.is_visible ? 'Gérer & Partager' : 'Voir les stats (Archivé)')}
                 </Link>
               </div>

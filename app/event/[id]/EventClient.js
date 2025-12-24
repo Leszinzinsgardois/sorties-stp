@@ -34,10 +34,10 @@ export default function EventClient() {
   const handleJoin = async () => {
     if (!pseudo) return
     
-    // SÉCURITÉ : On revérifie ici si c'est fini ou annulé
+    // BLOQUAGE SI TERMINÉ OU ANNULÉ
     const isFinishedCheck = new Date() > new Date(event.end_time)
     if (event.is_cancelled || isFinishedCheck) {
-        alert("Inscriptions fermées.")
+        alert("Les inscriptions sont fermées.")
         return
     }
 
@@ -64,7 +64,7 @@ export default function EventClient() {
 
   const isFull = participantCount >= event.max_participants
   
-  // NOUVEAU : Calcul si c'est terminé
+  // LOGIQUE TERMINÉ
   const isFinished = new Date() > new Date(event.end_time)
 
   const addressQuery = event.location_type === 'public' ? event.location_name : event.meeting_point
@@ -216,13 +216,13 @@ export default function EventClient() {
 
             {/* --- LOGIQUE D'INSCRIPTION --- */}
             {event.is_cancelled ? (
-                <div className="text-center bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 p-4 rounded-xl font-bold">
+                <div className="text-center bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 p-4 rounded-xl font-bold border border-slate-200 dark:border-slate-700">
                     🚫 Inscriptions fermées (Annulé)
                 </div>
             ) : isFinished ? (
                 // NOUVEAU : Message si terminé
-                <div className="text-center bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 p-4 rounded-xl font-bold flex items-center justify-center gap-2">
-                    <Clock size={18} /> C'est fini ! (ou l'évènement est en cours) À la prochaine.
+                <div className="text-center bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 p-4 rounded-xl font-bold flex items-center justify-center gap-2 border border-slate-200 dark:border-slate-700">
+                    <Clock size={18} /> C'est fini ! À la prochaine.
                 </div>
             ) : !hasJoined && !isFull ? (
                 <div className="flex gap-2">
