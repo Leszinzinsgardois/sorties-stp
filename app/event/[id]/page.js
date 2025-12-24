@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { Calendar, MapPin, TramFront, Users, AlertTriangle, Copy, Home } from 'lucide-react'
+import { Calendar, MapPin, TramFront, Users, AlertTriangle, Copy, Home, Info } from 'lucide-react'
 
 export default function EventPage() {
   const { id } = useParams()
@@ -131,6 +131,16 @@ export default function EventPage() {
                     Plans
                 </a>
             </div>
+        </div>
+
+        {/* --- NOUVEAU BLOC : DESCRIPTION --- */}
+        <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm p-6 mb-6 border border-slate-100 dark:border-slate-800">
+             <h3 className="font-bold text-slate-800 dark:text-white flex items-center gap-2 mb-3">
+                <Info size={20} className="text-indigo-500 dark:text-indigo-400"/> À propos
+             </h3>
+             <div className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800/50">
+                {event.description ? event.description : <span className="italic text-slate-400">Aucune information supplémentaire fournie par l'organisateur.</span>}
+             </div>
         </div>
 
         {/* PARTICIPANTS */}

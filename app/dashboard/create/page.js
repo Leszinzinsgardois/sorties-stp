@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, MapPin, TramFront, Calendar, Info } from 'lucide-react'
+import { ArrowLeft, MapPin, TramFront, Calendar, Info, Clock, AlignLeft, Type } from 'lucide-react'
 import Link from 'next/link'
 
 export default function CreateEvent() {
@@ -42,7 +42,6 @@ export default function CreateEvent() {
       
       // Combiner date et heure pour le format timestamp
       const startDateTime = new Date(`${date}T${time}`).toISOString()
-      // On met arbitrairement la fin 5h plus tard (pour le MVP)
       const endDateTime = new Date(new Date(`${date}T${time}`).getTime() + 5 * 60 * 60 * 1000).toISOString()
 
       // 2. Insertion dans Supabase
@@ -56,17 +55,15 @@ export default function CreateEvent() {
             end_time: endDateTime,
             organizer_id: user.id,
             location_type: locationType,
-            location_name: locationType === 'public' ? locationName : null, // Nom du bar
-            meeting_point: locationType === 'private' ? meetingPoint : null, // "Devant la boulangerie"
+            location_name: locationType === 'public' ? locationName : null,
+            meeting_point: locationType === 'private' ? meetingPoint : null,
             tram_stop: tramStop,
-            max_participants: 30, // Hard-codé comme prévu
+            max_participants: 30, 
             is_visible: true
           }
         ])
 
       if (error) throw error
-
-      // 3. Succès -> Retour au dashboard
       router.push('/dashboard')
 
     } catch (error) {
@@ -77,142 +74,153 @@ export default function CreateEvent() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 pb-10">
-      {/* Header */}
-      <div className="bg-white p-4 border-b flex items-center gap-4 sticky top-0 z-10">
-        <Link href="/dashboard" className="text-gray-600 hover:text-blue-600">
-          <ArrowLeft />
+    <main className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20 transition-colors">
+      
+      {/* HEADER */}
+      <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 sticky top-0 z-10 px-4 py-4 flex items-center gap-4">
+        <Link href="/dashboard" className="bg-slate-100 dark:bg-slate-800 p-2 rounded-full text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+          <ArrowLeft size={20} />
         </Link>
-        <h1 className="text-xl font-bold">Créer une sortie</h1>
+        <h1 className="text-xl font-bold text-slate-800 dark:text-white">Créer une sortie</h1>
       </div>
 
-      <form onSubmit={handleSubmit} className="max-w-md mx-auto p-4 space-y-6">
+      <form onSubmit={handleSubmit} className="max-w-md mx-auto p-4 space-y-6 mt-2">
         
         {/* TITRE & DESC */}
-        <div className="bg-white p-4 rounded-xl shadow-sm space-y-4">
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nom de la sortie</label>
-            <input 
-              type="text" required placeholder="Ex: Anniv de Thomas"
-              className="w-full p-2 border rounded-lg focus:border-blue-500 outline-none"
-              value={title} onChange={e => setTitle(e.target.value)}
-            />
+            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2 ml-1">Quoi ?</label>
+            <div className="flex items-center bg-slate-50 dark:bg-slate-800 rounded-xl px-4 border border-transparent focus-within:border-blue-500 transition">
+                <Type size={18} className="text-slate-400 mr-3 shrink-0" />
+                <input 
+                type="text" required placeholder="Titre (ex: Anniv Thomas)"
+                className="w-full py-4 bg-transparent outline-none text-slate-900 dark:text-white font-bold placeholder:font-normal"
+                value={title} onChange={e => setTitle(e.target.value)}
+                />
+            </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description (Optionnel)</label>
-            <textarea 
-              placeholder="On va boire un coup..."
-              className="w-full p-2 border rounded-lg focus:border-blue-500 outline-none h-20"
-              value={description} onChange={e => setDescription(e.target.value)}
-            />
+            <div className="flex items-start bg-slate-50 dark:bg-slate-800 rounded-xl px-4 py-3 border border-transparent focus-within:border-blue-500 transition">
+                <AlignLeft size={18} className="text-slate-400 mr-3 mt-1 shrink-0" />
+                <textarea 
+                placeholder="Description (optionnel)..."
+                className="w-full bg-transparent outline-none text-slate-900 dark:text-white min-h-[80px] resize-none"
+                value={description} onChange={e => setDescription(e.target.value)}
+                />
+            </div>
           </div>
         </div>
 
         {/* DATE & HEURE */}
-        <div className="bg-white p-4 rounded-xl shadow-sm space-y-4">
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-              <input 
-                type="date" required
-                className="w-full p-2 border rounded-lg outline-none"
-                value={date} onChange={e => setDate(e.target.value)}
-              />
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 space-y-5">
+            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-[-10px] ml-1">Quand ?</label>
+            <div className="flex gap-4">
+                <div className="flex-1 bg-slate-50 dark:bg-slate-800 rounded-xl px-4 py-3 border border-transparent focus-within:border-blue-500 flex items-center">
+                    <Calendar size={18} className="text-slate-400 mr-3 shrink-0" />
+                    <input 
+                        type="date" required
+                        className="w-full bg-transparent outline-none text-slate-900 dark:text-white font-medium"
+                        value={date} onChange={e => setDate(e.target.value)}
+                    />
+                </div>
+                <div className="w-1/3 bg-slate-50 dark:bg-slate-800 rounded-xl px-4 py-3 border border-transparent focus-within:border-blue-500 flex items-center">
+                    <input 
+                        type="time" required
+                        className="w-full bg-transparent outline-none text-slate-900 dark:text-white font-medium text-center"
+                        value={time} onChange={e => setTime(e.target.value)}
+                    />
+                </div>
             </div>
-            <div className="w-1/3">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Heure</label>
-              <input 
-                type="time" required
-                className="w-full p-2 border rounded-lg outline-none"
-                value={time} onChange={e => setTime(e.target.value)}
-              />
-            </div>
-          </div>
         </div>
 
         {/* LIEU & TRANSPORT */}
-        <div className="bg-white p-4 rounded-xl shadow-sm space-y-6">
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 space-y-6">
           
           {/* Choix Public / Privé */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Type de lieu</label>
-            <div className="grid grid-cols-2 gap-2">
+            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-3 ml-1">Où ça ?</label>
+            <div className="grid grid-cols-2 gap-3">
               <button 
                 type="button"
                 onClick={() => setLocationType('public')}
-                className={`p-2 rounded-lg border text-sm font-medium transition ${locationType === 'public' ? 'bg-blue-50 border-blue-500 text-blue-700' : 'border-gray-200 text-gray-600'}`}
+                className={`p-4 rounded-2xl text-sm font-bold transition flex flex-col items-center gap-2 ${locationType === 'public' ? 'bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-500 text-blue-700 dark:text-blue-300' : 'bg-slate-50 dark:bg-slate-800 border-2 border-transparent text-slate-500'}`}
               >
-                🏢 Lieu Public (Bar...)
+                <MapPin size={24} />
+                Lieu Public
               </button>
               <button 
                 type="button"
                 onClick={() => setLocationType('private')}
-                className={`p-2 rounded-lg border text-sm font-medium transition ${locationType === 'private' ? 'bg-purple-50 border-purple-500 text-purple-700' : 'border-gray-200 text-gray-600'}`}
+                className={`p-4 rounded-2xl text-sm font-bold transition flex flex-col items-center gap-2 ${locationType === 'private' ? 'bg-purple-50 dark:bg-purple-900/30 border-2 border-purple-500 text-purple-700 dark:text-purple-300' : 'bg-slate-50 dark:bg-slate-800 border-2 border-transparent text-slate-500'}`}
               >
-                🏠 Lieu Privé (Appart)
+                <Info size={24} />
+                Lieu Privé
               </button>
             </div>
           </div>
 
-          {/* Champs dynamiques selon le type */}
+          {/* Champs dynamiques */}
           {locationType === 'public' ? (
-            <div className="animate-in fade-in">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nom du lieu</label>
-              <div className="flex items-center border rounded-lg px-3 bg-gray-50">
-                <MapPin size={18} className="text-gray-400 mr-2" />
+            <div className="animate-in fade-in zoom-in duration-300">
+              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2 ml-1">Nom du lieu</label>
+              <div className="flex items-center bg-slate-50 dark:bg-slate-800 rounded-xl px-4 border border-transparent focus-within:border-blue-500 transition">
+                <MapPin size={18} className="text-slate-400 mr-3" />
                 <input 
-                  type="text" placeholder="Ex: Jungle Pub"
-                  className="w-full p-2 bg-transparent outline-none"
+                  type="text" placeholder="Ex: Jungle Pub, Parc du Peyrou..."
+                  className="w-full py-4 bg-transparent outline-none text-slate-900 dark:text-white"
                   value={locationName} onChange={e => setLocationName(e.target.value)}
                 />
               </div>
             </div>
           ) : (
-            <div className="animate-in fade-in space-y-2">
-               <label className="block text-sm font-medium text-purple-700 mb-1">📍 Point de rendez-vous (Public)</label>
-               <div className="bg-purple-50 p-3 rounded-lg border border-purple-100 text-xs text-purple-800 mb-2 flex gap-2">
-                  <Info size={16} className="shrink-0" />
-                  Ne donne pas ton adresse exacte ici. Donne un point de repère proche.
+            <div className="animate-in fade-in zoom-in duration-300 space-y-3">
+               <label className="block text-xs font-bold text-purple-600 dark:text-purple-400 uppercase mb-1 ml-1">📍 Point de rendez-vous (Public)</label>
+               <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-xl border border-purple-100 dark:border-purple-900/50 text-xs text-purple-800 dark:text-purple-200 flex gap-3 leading-relaxed">
+                  <Info size={16} className="shrink-0 mt-0.5" />
+                  <div>Ne mets <strong>jamais</strong> ton adresse perso ici. Donne un point de repère public (Arrêt de tram, Boulangerie...).</div>
                </div>
-               <input 
-                  type="text" required placeholder="Ex: Devant la pharmacie de l'arrêt"
-                  className="w-full p-2 border rounded-lg focus:border-purple-500 outline-none"
-                  value={meetingPoint} onChange={e => setMeetingPoint(e.target.value)}
-                />
+               <div className="flex items-center bg-slate-50 dark:bg-slate-800 rounded-xl px-4 border border-transparent focus-within:border-purple-500 transition">
+                 <MapPin size={18} className="text-slate-400 mr-3" />
+                 <input 
+                    type="text" required placeholder="Ex: Devant la pharmacie..."
+                    className="w-full py-4 bg-transparent outline-none text-slate-900 dark:text-white"
+                    value={meetingPoint} onChange={e => setMeetingPoint(e.target.value)}
+                  />
+               </div>
             </div>
           )}
 
-          {/* TRAMWAY (Obligatoire) */}
+          {/* TRAMWAY */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Arrêt de Tram le plus proche</label>
-            <div className="relative">
-              <TramFront size={18} className="absolute left-3 top-3 text-gray-400" />
+            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2 ml-1">Accès Tram</label>
+            <div className="relative bg-slate-50 dark:bg-slate-800 rounded-xl border border-transparent focus-within:border-blue-500 transition">
+              <TramFront size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
               <select 
                 value={tramStop}
                 onChange={(e) => setTramStop(e.target.value)}
-                className="w-full p-2 pl-10 border rounded-lg appearance-none bg-white outline-none focus:border-blue-500"
+                className="w-full py-4 pl-12 pr-4 bg-transparent appearance-none outline-none text-slate-900 dark:text-white font-medium"
               >
-                <option value="Ligne 1">🟦 Tram Ligne 1</option>
-                <option value="Ligne 2">🟧 Tram Ligne 2</option>
-                <option value="Ligne 3">🟩 Tram Ligne 3</option>
-                <option value="Ligne 4">🟫 Tram Ligne 4</option>
-                <option value="Ligne 5">🟪 Tram Ligne 5 </option>
+                <option className="dark:bg-slate-900" value="Ligne 1">🟦 Tram Ligne 1</option>
+                <option className="dark:bg-slate-900" value="Ligne 2">🟧 Tram Ligne 2</option>
+                <option className="dark:bg-slate-900" value="Ligne 3">🟩 Tram Ligne 3</option>
+                <option className="dark:bg-slate-900" value="Ligne 4">🟫 Tram Ligne 4</option>
+                <option className="dark:bg-slate-900" value="Ligne 5">🟪 Tram Ligne 5 </option>
               </select>
             </div>
           </div>
         </div>
 
-        {/* INFO JAUGE (Non modifiable) */}
-        <div className="text-center text-xs text-gray-400">
+        {/* INFO JAUGE */}
+        <div className="text-center text-xs text-slate-400 dark:text-slate-500 font-mono">
           ⚠️ Limité automatiquement à 30 personnes max.
         </div>
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-blue-700 transition active:scale-95 disabled:opacity-50"
+          className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-500/30 hover:scale-[1.02] active:scale-95 transition-transform disabled:opacity-50 disabled:scale-100"
         >
-          {loading ? 'Création...' : '🚀 Lancer la soirée'}
+          {loading ? 'Création en cours...' : '🚀 Lancer la soirée'}
         </button>
 
       </form>

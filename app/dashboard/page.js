@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Plus, MapPin, Calendar, Users, LogOut, Moon } from 'lucide-react'
+import { Plus, MapPin, Calendar, Users, LogOut } from 'lucide-react'
 
 export default function Dashboard() {
   const router = useRouter()
@@ -22,7 +22,13 @@ export default function Dashboard() {
   }
 
   async function fetchMyEvents(userId) {
-    const { data } = await supabase.from('events').select('*').eq('organizer_id', userId).order('start_time', { ascending: true })
+    // MODIF IMPORTANTE : On ajoute 'participants(count)' pour avoir le nombre d'inscrits
+    const { data } = await supabase
+      .from('events')
+      .select('*, participants(count)') 
+      .eq('organizer_id', userId)
+      .order('start_time', { ascending: true })
+      
     setEvents(data || [])
     setLoading(false)
   }
@@ -83,9 +89,14 @@ export default function Dashboard() {
                   <span className="text-slate-300 dark:text-slate-600">•</span> 
                   <span className="font-medium text-blue-600 dark:text-blue-400">{event.tram_stop}</span>
                 </div>
+                
+                {/* MODIF ICI : Affichage du compteur dynamique */}
                 <div className="flex items-center gap-2">
                   <Users size={16} className="text-slate-400"/>
-                  0 / {event.max_participants}
+                  <span className={event.participants?.[0]?.count >= event.max_participants ? "text-red-500 font-bold" : "font-medium text-slate-900 dark:text-white"}>
+                    {event.participants?.[0]?.count || 0}
+                  </span> 
+                  / {event.max_participants}
                 </div>
               </div>
 

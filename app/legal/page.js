@@ -1,17 +1,25 @@
 'use client'
 
-import Link from 'next/link'
+import { useRouter } from 'next/navigation' // <--- On importe le hook de navigation
 import { ArrowLeft } from 'lucide-react'
 
 export default function LegalPage() {
+  const router = useRouter() // <--- On initialise le router
+
   return (
     <main className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors pb-20">
       
       {/* HEADER SIMPLE */}
       <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 sticky top-0 z-10 px-6 py-4 flex items-center gap-4">
-        <Link href="/login" className="bg-slate-100 dark:bg-slate-800 p-2 rounded-full text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+        
+        {/* BOUTON RETOUR DYNAMIQUE */}
+        <button 
+          onClick={() => router.back()} 
+          className="bg-slate-100 dark:bg-slate-800 p-2 rounded-full text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
+        >
           <ArrowLeft size={20} />
-        </Link>
+        </button>
+
         <h1 className="text-xl font-bold text-slate-800 dark:text-white">
           Mentions Légales & CGU
         </h1>
