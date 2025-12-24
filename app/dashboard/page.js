@@ -4,12 +4,13 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Plus, MapPin, Calendar, Users, LogOut } from 'lucide-react'
+import { Plus, MapPin, Calendar, Users, Filter, Clock, Archive } from 'lucide-react'
 
 export default function Dashboard() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [events, setEvents] = useState([])
+  const [showArchived, setShowArchived] = useState(false) // État pour le filtre
 
   useEffect(() => {
     checkUser()
@@ -22,65 +23,78 @@ export default function Dashboard() {
   }
 
   async function fetchMyEvents(userId) {
-    // MODIF IMPORTANTE : On ajoute 'participants(count)' pour avoir le nombre d'inscrits
     const { data } = await supabase
       .from('events')
       .select('*, participants(count)') 
       .eq('organizer_id', userId)
-      .order('start_time', { ascending: true })
+      .order('start_time', { ascending: false }) // On trie du plus récent au plus vieux
       
     setEvents(data || [])
     setLoading(false)
   }
 
-  async function handleSignOut() {
-    await supabase.auth.signOut()
-    router.push('/')
-  }
+  // Logique de filtrage
+  const filteredEvents = events.filter(event => {
+    if (showArchived) return true // Si on veut tout voir, on retourne tout
+    return event.is_visible // Sinon, seulement les actifs
+  })
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 text-slate-500">Chargement...</div>
 
   return (
     <main className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-24 transition-colors">
       
-      {/* HEADER */}
-      <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 sticky top-0 z-10 px-6 py-4 flex justify-between items-center">
-        <h1 className="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-500">
-          Mes Sorties
-        </h1>
-        <div className="flex items-center gap-3">
-            {/* Lien Profil Simple */}
-            <Link href="/profile" className="w-10 h-10 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 transition">
-                <Users size={20} />
-            </Link>
-            {/* Logout */}
-            <button onClick={handleSignOut} className="text-slate-400 hover:text-red-500 p-2 transition">
-                <LogOut size={20} />
-            </button>
+      {/* BARRE DE TITRE & FILTRES (Plus de header complexe) */}
+      <div className="max-w-md mx-auto px-6 pt-8 pb-4 flex items-end justify-between">
+        <div>
+            <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                Mes Sorties
+            </h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
+                Gère tes événements.
+            </p>
         </div>
-      </header>
 
-      {/* LISTE */}
-      <div className="p-4 space-y-4 max-w-md mx-auto mt-4">
-        {events.length === 0 ? (
-          <div className="text-center py-16 bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-300 dark:border-slate-700 mx-4">
+        {/* Bouton Toggle Filtre */}
+        <button 
+            onClick={() => setShowArchived(!showArchived)}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition ${showArchived ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400'}`}
+        >
+            {showArchived ? <Clock size={14}/> : <Filter size={14}/>}
+            {showArchived ? 'Masquer Terminés' : 'Afficher tout'}
+        </button>
+      </div>
+
+      {/* LISTE DES ÉVÉNEMENTS */}
+      <div className="p-4 space-y-4 max-w-md mx-auto">
+        
+        {/* Cas Vide (Aucun event du tout ou aucun actif) */}
+        {filteredEvents.length === 0 ? (
+          <div className="text-center py-16 bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-300 dark:border-slate-700 mx-2 animate-in fade-in zoom-in duration-300">
             <div className="bg-blue-50 dark:bg-slate-800 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Calendar className="text-blue-500 dark:text-blue-400" size={32} />
+              {showArchived ? <Archive className="text-slate-400" size={32}/> : <Calendar className="text-blue-500 dark:text-blue-400" size={32} />}
             </div>
-            <h3 className="text-xl font-bold text-slate-800 dark:text-white">Rien de prévu ?</h3>
-            <p className="text-slate-500 dark:text-slate-400 mt-2 mb-8">Lance une soirée pour tes potes.</p>
-            <Link href="/dashboard/create">
-              <button className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition">
-                Créer une sortie
-              </button>
-            </Link>
+            <h3 className="text-xl font-bold text-slate-800 dark:text-white">
+                {showArchived ? "Aucun historique." : "Rien de prévu ?"}
+            </h3>
+            <p className="text-slate-500 dark:text-slate-400 mt-2 mb-8 max-w-[200px] mx-auto">
+                {showArchived ? "Tu n'as pas encore organisé de soirées passées." : "Lance une soirée pour tes potes dès maintenant."}
+            </p>
+            {!showArchived && (
+                <Link href="/dashboard/create">
+                <button className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition">
+                    Créer une sortie
+                </button>
+                </Link>
+            )}
           </div>
         ) : (
-          events.map(event => (
-            <div key={event.id} className="bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 relative hover:scale-[1.02] transition-transform">
+          filteredEvents.map(event => (
+            <div key={event.id} className={`bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border relative hover:scale-[1.02] transition-transform ${!event.is_visible ? 'opacity-70 border-slate-100 dark:border-slate-800 grayscale-[0.5]' : 'border-slate-100 dark:border-slate-800'}`}>
+              
               <div className="flex justify-between items-start mb-3">
-                <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100">{event.title}</h3>
-                <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide ${event.is_visible ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-slate-100 text-slate-500'}`}>
+                <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100 truncate pr-4">{event.title}</h3>
+                <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide shrink-0 ${event.is_visible ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-slate-100 text-slate-500'}`}>
                   {event.is_visible ? 'En ligne' : 'Terminé'}
                 </span>
               </div>
@@ -97,7 +111,6 @@ export default function Dashboard() {
                   <span className="font-medium text-blue-600 dark:text-blue-400">{event.tram_stop}</span>
                 </div>
                 
-                {/* MODIF ICI : Affichage du compteur dynamique */}
                 <div className="flex items-center gap-2">
                   <Users size={16} className="text-slate-400"/>
                   <span className={event.participants?.[0]?.count >= event.max_participants ? "text-red-500 font-bold" : "font-medium text-slate-900 dark:text-white"}>
@@ -107,16 +120,18 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              <Link href={`/event/${event.id}`} className="block text-center w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold py-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition">
-                Gérer & Partager
+              {/* Si l'événement est actif, bouton bleu. Sinon bouton gris "Voir archives" */}
+              <Link href={`/event/${event.id}`} className={`block text-center w-full font-bold py-3 rounded-xl transition ${event.is_visible ? 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-default'}`}>
+                {event.is_visible ? 'Gérer & Partager' : 'Voir les stats (Archivé)'}
               </Link>
             </div>
           ))
         )}
       </div>
 
+      {/* FAB CREATE (Toujours accessible) */}
       <Link href="/dashboard/create">
-        <button className="fixed bottom-6 right-6 bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 rounded-full shadow-xl shadow-blue-600/40 hover:scale-110 transition-transform">
+        <button className="fixed bottom-6 right-6 bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 rounded-full shadow-xl shadow-blue-600/40 hover:scale-110 transition-transform z-30">
           <Plus size={32} />
         </button>
       </Link>
