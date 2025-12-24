@@ -20,6 +20,7 @@ export const metadata = {
     locale: 'fr_FR',
     type: 'website',
   },
+  manifest: '/manifest.json',
 }
 
 export default function RootLayout({ children }) {

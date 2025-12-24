@@ -1,17 +1,18 @@
 import { createClient } from '@supabase/supabase-js'
-import EventClient from './EventClient' // On importe ton composant client
+import EventClient from './EventClient'
 
-// On recrée un client Supabase juste pour ce fetch serveur (SEO)
+// Client Supabase basique pour le SEO (Server Side)
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 )
 
-// --- FONCTION MAGIQUE POUR LE SEO ---
-export async function generateMetadata({ params }) {
-  const { id } = params
-  
-  // On récupère juste les infos nécessaires pour la bannière
+export async function generateMetadata(props) {
+  // CORRECTION ICI : On attend que params soit résolu
+  const params = await props.params;
+  const { id } = params;
+
+  // On récupère les infos
   const { data: event } = await supabase
     .from('events')
     .select('title, start_time, location_name')
@@ -25,8 +26,8 @@ export async function generateMetadata({ params }) {
   }
 
   const date = new Date(event.start_time).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' })
-  const titre = `Soirée : ${event.title}`
-  const description = `📅 ${date} • 📍 ${event.location_name || 'Lieu secret'} • Rejoins la liste des invités sur Sorties MTP !`
+  const titre = `${event.title}`
+  const description = `📅 ${date} • 📍 ${event.location_name || 'Lieu secret'} • Rejoins la liste des invités !`
 
   return {
     title: titre,
@@ -34,14 +35,11 @@ export async function generateMetadata({ params }) {
     openGraph: {
       title: titre,
       description: description,
-      // On pourrait même générer une image dynamique ici plus tard
+      // images: ['/opengraph-image.png'] // Ça prendra celle par défaut si on n'en met pas
     },
   }
 }
 
-// --- LE COMPOSANT DE PAGE ---
 export default function Page() {
-  // Ce composant est vide, il sert juste de "coquille" pour le SEO
-  // Il charge immédiatement ton interface client
   return <EventClient />
 }

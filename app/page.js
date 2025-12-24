@@ -218,6 +218,9 @@ export default function Home() {
             <Link href="/about" className="hover:text-blue-600 transition">À propos</Link>
             <Link href="/legal" className="hover:text-blue-600 transition">Mentions Légales & CGU</Link>
         </div>
+        <Link href="/install" className="hover:text-blue-600 transition font-bold flex items-center gap-1 text-align center justify-center mb-4">
+            <Smartphone size={14}/> Installer l'app
+        </Link>
         <p className="text-xs text-slate-400">
             © 2024 Sorties MTP. Fait avec ❤️ à Montpellier.
         </p>
