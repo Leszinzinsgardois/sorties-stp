@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { Calendar, MapPin, TramFront, Users, AlertTriangle, Copy, ArrowLeft, Info, AlertOctagon } from 'lucide-react'
+import { Calendar, MapPin, TramFront, Users, AlertTriangle, Copy, ArrowLeft, Info, AlertOctagon, Clock } from 'lucide-react'
 
 export default function EventClient() {
   const { id } = useParams()
@@ -33,6 +33,14 @@ export default function EventClient() {
 
   const handleJoin = async () => {
     if (!pseudo) return
+    
+    // SÉCURITÉ : On revérifie ici si c'est fini ou annulé
+    const isFinishedCheck = new Date() > new Date(event.end_time)
+    if (event.is_cancelled || isFinishedCheck) {
+        alert("Inscriptions fermées.")
+        return
+    }
+
     setJoinLoading(true)
     try {
       const { error } = await supabase.from('participants').insert([{ event_id: id, user_id: null, guest_name: pseudo }])
@@ -55,6 +63,10 @@ export default function EventClient() {
   if (!event) return <div className="p-10 text-center text-red-500">Soirée introuvable.</div>
 
   const isFull = participantCount >= event.max_participants
+  
+  // NOUVEAU : Calcul si c'est terminé
+  const isFinished = new Date() > new Date(event.end_time)
+
   const addressQuery = event.location_type === 'public' ? event.location_name : event.meeting_point
   const encodedAddress = encodeURIComponent(addressQuery + ' Montpellier')
 
@@ -79,7 +91,7 @@ export default function EventClient() {
 
       <div className="max-w-md mx-auto px-4 pt-6">
 
-        {/* ALERTE ANNULATION (ROUGE) */}
+        {/* ALERTE ANNULATION */}
         {event.is_cancelled && (
             <div className="bg-red-600 text-white p-6 rounded-3xl mb-6 shadow-xl shadow-red-600/20 border-4 border-white dark:border-slate-900 animate-in fade-in slide-in-from-top-4">
                 <div className="flex items-start gap-4">
@@ -100,7 +112,7 @@ export default function EventClient() {
             </div>
         )}
 
-        {/* ALERTE MODIFICATION HORAIRE (ORANGE) */}
+        {/* ALERTE MODIFICATION HORAIRE */}
         {!event.is_cancelled && event.initial_start_time && (
             <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-900/50 p-4 rounded-2xl mb-6 animate-pulse">
                 <div className="flex items-start gap-3">
@@ -116,13 +128,21 @@ export default function EventClient() {
         )}
         
         {/* INFO CARD */}
-        <div className={`bg-white dark:bg-slate-900 rounded-3xl shadow-sm p-6 mb-6 space-y-6 border border-slate-100 dark:border-slate-800 ${event.is_cancelled ? 'opacity-50 grayscale' : ''}`}>
+        <div className={`bg-white dark:bg-slate-900 rounded-3xl shadow-sm p-6 mb-6 space-y-6 border border-slate-100 dark:border-slate-800 ${event.is_cancelled || isFinished ? 'opacity-70 grayscale-[0.5]' : ''}`}>
             
             <div className="flex justify-between items-center">
                 <span className="text-xs font-bold bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-full">
                     @{event.profiles?.pseudo || 'Anonyme'}
                 </span>
-                {isFull && !event.is_cancelled && <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-md font-bold">COMPLET</span>}
+                
+                {/* Badges d'état */}
+                {event.is_cancelled ? (
+                    <span className="bg-red-600 text-white text-xs px-2 py-1 rounded-md font-bold">ANNULÉ</span>
+                ) : isFinished ? (
+                    <span className="bg-slate-200 text-slate-600 text-xs px-2 py-1 rounded-md font-bold">TERMINÉ</span>
+                ) : isFull && (
+                    <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-md font-bold">COMPLET</span>
+                )}
             </div>
 
             {/* Date */}
@@ -180,7 +200,7 @@ export default function EventClient() {
              </div>
         </div>
 
-        {/* PARTICIPANTS (Caché si annulé ?) Non, on laisse pour voir qui était chaud */}
+        {/* PARTICIPANTS & INSCRIPTION */}
         <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm p-6 mb-8 border border-slate-100 dark:border-slate-800">
             <div className="flex justify-between items-center mb-4">
                 <h3 className="font-bold text-slate-800 dark:text-white flex items-center gap-2">
@@ -194,10 +214,15 @@ export default function EventClient() {
                 <div className={`h-full transition-all duration-500 ${isFull ? 'bg-red-500' : 'bg-gradient-to-r from-blue-500 to-indigo-500'}`} style={{ width: `${Math.min((participantCount / 30) * 100, 100)}%` }}></div>
             </div>
 
-            {/* Formulaire RSVP */}
+            {/* --- LOGIQUE D'INSCRIPTION --- */}
             {event.is_cancelled ? (
                 <div className="text-center bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 p-4 rounded-xl font-bold">
-                    🚫 Les inscriptions sont fermées.
+                    🚫 Inscriptions fermées (Annulé)
+                </div>
+            ) : isFinished ? (
+                // NOUVEAU : Message si terminé
+                <div className="text-center bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 p-4 rounded-xl font-bold flex items-center justify-center gap-2">
+                    <Clock size={18} /> C'est fini ! (ou l'évènement est en cours) À la prochaine.
                 </div>
             ) : !hasJoined && !isFull ? (
                 <div className="flex gap-2">
