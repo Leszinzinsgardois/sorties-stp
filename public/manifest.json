@@ -1,6 +1,6 @@
 {
-  "name": "Sorties MTP",
-  "short_name": "Sorties MTP",
+  "name": "Oukonsort",
+  "short_name": "Oukonsort",
   "description": "L'app des soirées étudiantes à Montpellier.",
   "start_url": "/dashboard",
   "display": "standalone",

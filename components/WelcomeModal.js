@@ -46,13 +46,13 @@ export default function WelcomeModal() {
 
         {/* Titre */}
         <h2 className="text-xl font-extrabold text-slate-900 dark:text-white mb-4 leading-tight relative z-10">
-            Sorties MTP est en ligne <br/>
+            Oukonsort est en ligne <br/>
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-500">(V1 – MVP)</span>
         </h2>
 
         {/* Texte */}
         <div className="space-y-3 text-slate-600 dark:text-slate-300 text-sm leading-relaxed mb-8 relative z-10">
-            <p><strong>Bienvenue sur la première version de Sorties MTP 👋</strong></p>
+            <p><strong>Bienvenue sur la première version de Oukonsort 👋</strong></p>
             <p>
                 Cette version est un <strong>MVP</strong> : certaines fonctionnalités et l’interface peuvent évoluer rapidement.
             </p>

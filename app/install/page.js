@@ -28,9 +28,9 @@ export default function InstallPage() {
         {/* ACCROCHE */}
         <div className="text-center mb-8">
             <div className="w-20 h-20 bg-blue-600 rounded-3xl mx-auto mb-6 shadow-2xl shadow-blue-500/30 flex items-center justify-center text-white font-black text-3xl">
-                S
+                O
             </div>
-            <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-2">Installe Sorties MTP</h2>
+            <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-2">Installe Oukonsort</h2>
             <p className="text-slate-500 dark:text-slate-400">
                 Ajoute l'app sur ton écran d'accueil pour y accéder en un clic, comme Insta ou Snap.
             </p>

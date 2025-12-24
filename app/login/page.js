@@ -60,7 +60,7 @@ export default function LoginPage() {
         
         <div className="text-center mb-8">
             <h1 className="text-3xl font-extrabold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-            Sorties MTP
+            Oukonsort
             </h1>
             <p className="text-slate-500 dark:text-slate-400 mt-2">
             {isSignUp ? "Rejoins la communauté étudiante" : "Connecte-toi pour organiser"}

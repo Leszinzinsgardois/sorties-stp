@@ -33,13 +33,13 @@ export default function LegalPage() {
           <div className="space-y-2 text-slate-600 dark:text-slate-300">
             <h3 className="font-bold text-slate-900 dark:text-white">Éditeur du service</h3>
             <p>
-              Sorties MTP est un service numérique édité par <strong>[Ton Nom et Prénom]</strong>, étudiant, à titre non professionnel, dans le cadre d'un projet expérimental (MVP).
+              Oukonsort est un service numérique édité par <strong>Antoine F.</strong>, étudiant, à titre non professionnel, dans le cadre d'un projet expérimental (MVP).
             </p>
           </div>
 
           <div className="space-y-2 text-slate-600 dark:text-slate-300">
             <h3 className="font-bold text-slate-900 dark:text-white">Contact</h3>
-            <p>Email : contact@sortiesmtp.fr</p>
+            <p>Email : contact@oukonsort.fr</p>
           </div>
 
           <div className="space-y-2 text-slate-600 dark:text-slate-300">
@@ -62,7 +62,7 @@ export default function LegalPage() {
           
           <article className="space-y-2 text-slate-600 dark:text-slate-300">
             <h3 className="font-bold text-slate-900 dark:text-white">Article 1 – Présentation du service et éditeur</h3>
-            <p>Sorties MTP est une application numérique ayant pour objet de faciliter l’organisation logistique de sorties privées entre personnes inscrites dans un établissement d’enseignement secondaire ou supérieur.</p>
+            <p>Oukonsort est une application numérique ayant pour objet de faciliter l’organisation logistique de sorties privées entre personnes inscrites dans un établissement d’enseignement secondaire ou supérieur.</p>
             <p>Le service est édité et développé par le développeur de l’application, agissant à titre non professionnel (ci-après « l’Éditeur »).</p>
             <p>L’application est actuellement proposée sous la forme d’une <strong>version MVP (Minimum Viable Product)</strong> susceptible d’évoluer régulièrement.</p>
           </article>
@@ -86,7 +86,7 @@ export default function LegalPage() {
 
           <article className="space-y-2 text-slate-600 dark:text-slate-300">
             <h3 className="font-bold text-slate-900 dark:text-white">Article 4 – Nature du service et responsabilité de l’Éditeur</h3>
-            <p>Sorties MTP agit exclusivement en tant qu’intermédiaire technique.</p>
+            <p>Oukonsort agit exclusivement en tant qu’intermédiaire technique.</p>
             <p>L’Éditeur n’organise aucun événement, ne participe à aucun événement, et ne contrôle pas le déroulement des événements.</p>
             <p>En conséquence, l’Éditeur ne saurait être tenu responsable de tout incident, accident, dommage corporel, matériel ou moral survenant avant, pendant ou après un événement.</p>
           </article>
