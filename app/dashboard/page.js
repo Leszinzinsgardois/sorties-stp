@@ -48,9 +48,16 @@ export default function Dashboard() {
         <h1 className="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-500">
           Mes Sorties
         </h1>
-        <button onClick={handleSignOut} className="text-slate-400 hover:text-red-500 p-2 transition">
-          <LogOut size={20} />
-        </button>
+        <div className="flex items-center gap-3">
+            {/* Lien Profil Simple */}
+            <Link href="/profile" className="w-10 h-10 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 transition">
+                <Users size={20} />
+            </Link>
+            {/* Logout */}
+            <button onClick={handleSignOut} className="text-slate-400 hover:text-red-500 p-2 transition">
+                <LogOut size={20} />
+            </button>
+        </div>
       </header>
 
       {/* LISTE */}

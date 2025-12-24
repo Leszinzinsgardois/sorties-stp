@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { Calendar, MapPin, TramFront, Users, AlertTriangle, Copy, Home, Info } from 'lucide-react'
+// MODIF: On importe ArrowLeft pour le bouton retour
+import { Calendar, MapPin, TramFront, Users, AlertTriangle, Copy, ArrowLeft, Info } from 'lucide-react'
 
 export default function EventPage() {
   const { id } = useParams()
@@ -64,9 +65,11 @@ export default function EventPage() {
       {/* HEADER FIXE */}
       <div className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 pt-safe-top">
          <div className="flex items-center justify-between p-4">
-            <Link href="/" className="bg-slate-100 dark:bg-slate-800 p-2 rounded-full text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition">
-                <Home size={20} />
+            {/* MODIF ICI : Lien vers /dashboard avec icône flèche */}
+            <Link href="/dashboard" className="bg-slate-100 dark:bg-slate-800 p-2 rounded-full text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+                <ArrowLeft size={20} />
             </Link>
+            
             <h1 className="font-bold text-slate-800 dark:text-white truncate max-w-[200px] text-center">
                 {event.title}
             </h1>
@@ -133,7 +136,7 @@ export default function EventPage() {
             </div>
         </div>
 
-        {/* --- NOUVEAU BLOC : DESCRIPTION --- */}
+        {/* DESCRIPTION */}
         <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm p-6 mb-6 border border-slate-100 dark:border-slate-800">
              <h3 className="font-bold text-slate-800 dark:text-white flex items-center gap-2 mb-3">
                 <Info size={20} className="text-indigo-500 dark:text-indigo-400"/> À propos
