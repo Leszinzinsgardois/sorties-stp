@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ShieldAlert, CheckCircle, MapPin, User, Users, AlertTriangle, ArrowLeft, Ban, Lock, Archive, History, Clock } from 'lucide-react'
+// J'ai ajouté IdCard dans les imports pour l'icône
+import { ShieldAlert, CheckCircle, MapPin, User, Users, AlertTriangle, ArrowLeft, Ban, Lock, Archive, History, Clock, ShieldCheck, XCircle, IdCard } from 'lucide-react'
 
 export default function AdminPanel() {
   const router = useRouter()
@@ -74,7 +75,6 @@ export default function AdminPanel() {
   async function updateReportStatus(status) {
     await supabase.from('reports').update({ status }).eq('id', selectedReport.id)
     fetchReports()
-    // On ne ferme pas le panel (setSelectedReport(null)) pour garder le contexte
   }
 
   async function sanctionUser(type) {
@@ -89,7 +89,6 @@ export default function AdminPanel() {
     updateReportStatus('resolved')
   }
 
-  // C'est ici la clé : on Archive (V2 logic) au lieu de Delete, mais avec le bouton rouge (V1 design)
   async function archiveEvent() {
     if (!confirm("💥 ARCHIVER l'événement ? Il deviendra invisible mais sera conservé en base pour raison légale.")) return
     await supabase.from('events').update({ is_banned: true }).eq('id', selectedReport.event_id)
@@ -106,11 +105,17 @@ export default function AdminPanel() {
       {/* --- COLONNE GAUCHE (Liste & Onglets) --- */}
       <div className="w-full md:w-1/3 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 h-screen overflow-y-auto flex flex-col">
         <div className="sticky top-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-b border-slate-200 dark:border-slate-800 p-4 z-10">
-            <div className="flex items-center gap-3 mb-4">
-                <Link href="/dashboard" className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-500"><ArrowLeft size={18}/></Link>
-                <h1 className="font-bold text-lg text-slate-800 dark:text-white flex items-center gap-2">
-                    <ShieldAlert /> Modération
-                </h1>
+            <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                    <Link href="/dashboard" className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-500"><ArrowLeft size={18}/></Link>
+                    <h1 className="font-bold text-lg text-slate-800 dark:text-white flex items-center gap-2">
+                        <ShieldAlert /> Modération
+                    </h1>
+                </div>
+                {/* --- AJOUT DU BOUTON CNI ICI --- */}
+                <Link href="/admin/verification" className="p-2 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-900/40 transition" title="Vérifications CNI">
+                    <IdCard size={20} />
+                </Link>
             </div>
              {/* Onglets stylisés */}
              <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl relative z-20">
@@ -158,7 +163,7 @@ export default function AdminPanel() {
         </div>
       </div>
 
-      {/* --- COLONNE DROITE (Détails avec Design V1 restauré) --- */}
+      {/* --- COLONNE DROITE (Détails) --- */}
       <div className="w-full md:w-2/3 bg-slate-50 dark:bg-slate-950 h-screen overflow-y-auto p-6">
         {activeTab === 'reports' && selectedReport ? (
             <div className="max-w-2xl mx-auto space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
@@ -187,7 +192,7 @@ export default function AdminPanel() {
                     <div className="text-center p-10 text-slate-500 flex flex-col items-center gap-2"><ShieldAlert size={32} className="animate-pulse"/>Récupération des données...</div>
                 ) : (
                     <>
-                        {/* L'ORGANISATEUR (Design V1 restauré avec grosses icônes) */}
+                        {/* L'ORGANISATEUR */}
                         <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 relative overflow-hidden">
                             <div className="absolute top-0 right-0 p-4 opacity-[0.03] dark:opacity-[0.05] pointer-events-none"><User size={120} /></div>
                             <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-6 flex items-center gap-2"><User className="text-blue-500"/> L'Organisateur (Suspect)</h3>
@@ -202,18 +207,17 @@ export default function AdminPanel() {
                                     </div>
                                     <div className="pt-6 border-t border-slate-100 dark:border-slate-800 flex gap-3">
                                         <button onClick={() => sanctionUser('suspended')} className="flex-1 bg-orange-100 text-orange-700 hover:bg-orange-200 py-3 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2"><Lock size={16}/> Suspendre (Avertissement)</button>
-                                        <button onClick={() => sanctionUser('banned')} className="flex-1 bg-red-600 text-white hover:bg-red-700 py-3 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2shadow-lg shadow-red-500/20"><Ban size={16}/> BANNIR (Définitif)</button>
+                                        <button onClick={() => sanctionUser('banned')} className="flex-1 bg-red-600 text-white hover:bg-red-700 py-3 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2 shadow-lg shadow-red-500/20"><Ban size={16}/> BANNIR (Définitif)</button>
                                     </div>
                                 </div>
                             ) : <p className="text-slate-500 italic">Profil introuvable.</p>}
                         </div>
 
-                        {/* L'ÉVÉNEMENT (Design V1 restauré avec bouton rouge Archiver) */}
+                        {/* L'ÉVÉNEMENT */}
                         <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 relative overflow-hidden">
                              <div className="absolute top-0 right-0 p-4 opacity-[0.03] dark:opacity-[0.05] pointer-events-none"><MapPin size={120} /></div>
                             <div className="flex justify-between items-start mb-6 relative z-10">
                                 <h3 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2"><MapPin className="text-purple-500"/> L'Événement</h3>
-                                {/* Bouton Archiver style V1 (Rouge) */}
                                 <button onClick={archiveEvent} className="px-4 py-2 rounded-lg bg-red-600 text-white font-bold text-sm hover:bg-red-700 shadow-md shadow-red-500/20 transition flex items-center gap-2">
                                     <Archive size={16} /> Archiver (Supprimer)
                                 </button>
@@ -235,7 +239,6 @@ export default function AdminPanel() {
                 )}
             </div>
         ) : (
-            // États vides pour les onglets
             <div className="h-full flex flex-col items-center justify-center text-slate-400 opacity-50">
                 {activeTab === 'reports' ? <><ShieldAlert size={64} className="mb-4" /><p className="text-lg font-medium">Sélectionne un dossier à gauche</p></> : <><History size={64} className="mb-4" /><p className="text-lg font-medium">Historique des sanctions</p><p className="text-sm">Les archives sont conservées légalement.</p></>}
             </div>
