@@ -1,12 +1,53 @@
 import Link from 'next/link'
-import { Rocket, ShieldCheck, Zap, Heart, Code, ArrowRight, MapPin, Users, HelpCircle, CheckCircle, Smartphone, Share2, PartyPopper, MessageCircle } from 'lucide-react'
+import { Rocket, ShieldCheck, Zap, Heart, Code, ArrowRight, MapPin, Users, HelpCircle, CheckCircle, Smartphone, Share2, PartyPopper, MessageCircle, LogIn, Menu } from 'lucide-react'
 
 export default function Home() {
   return (
     <main className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors selection:bg-blue-500 selection:text-white overflow-x-hidden">
       
+      {/* --- NOUVEAU : HEADER FIXE --- */}
+      <nav className="fixed top-0 w-full z-50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-all">
+        <div className="container mx-auto px-6 h-16 flex items-center justify-between">
+            
+            {/* Logo / Marque */}
+            <Link href="/" className="flex items-center gap-2 group">
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform">
+                    <Rocket size={18} className="fill-white/20" />
+                </div>
+                <span className="font-black text-xl tracking-tight text-slate-900 dark:text-white">
+                    Sorties<span className="text-blue-600">MTP</span>
+                </span>
+            </Link>
+
+            {/* Actions Droite */}
+            <div className="flex items-center gap-3 md:gap-6">
+                
+                {/* Lien Installer (Visible sur Desktop & Mobile) */}
+                <Link 
+                    href="/install" 
+                    className="flex items-center gap-2 text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition"
+                    title="Installer l'application"
+                >
+                    <Smartphone size={18} />
+                    <span className="hidden md:inline">L'App</span>
+                </Link>
+
+                <div className="w-px h-6 bg-slate-200 dark:bg-slate-800"></div>
+
+                {/* Bouton Connexion */}
+                <Link 
+                    href="/login" 
+                    className="flex items-center gap-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-5 py-2 rounded-full font-bold text-sm hover:opacity-90 hover:scale-105 transition-all shadow-xl shadow-slate-900/10"
+                >
+                    <LogIn size={16} />
+                    <span>Connexion</span>
+                </Link>
+            </div>
+        </div>
+      </nav>
+
       {/* 1. HERO SECTION AVEC VISUEL 3D */}
-      <section className="relative pt-24 pb-20 lg:pt-32 lg:pb-32 overflow-hidden">
+      <section className="relative pt-32 pb-20 lg:pt-40 lg:pb-32 overflow-hidden">
         {/* Background Gradients */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-purple-500/20 rounded-full blur-[100px] -z-10 animate-pulse"></div>
         <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[80px] -z-10"></div>
@@ -218,7 +259,7 @@ export default function Home() {
             <Link href="/about" className="hover:text-blue-600 transition">À propos</Link>
             <Link href="/legal" className="hover:text-blue-600 transition">Mentions Légales & CGU</Link>
         </div>
-        <Link href="/install" className="hover:text-blue-600 transition font-bold flex items-center gap-1 text-align center justify-center mb-4">
+        <Link href="/install" className="hover:text-blue-600 transition font-bold flex items-center justify-center gap-1 mb-4">
             <Smartphone size={14}/> Installer l'app
         </Link>
         <p className="text-xs text-slate-400">
