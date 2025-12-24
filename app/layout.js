@@ -1,41 +1,40 @@
-import "./globals.css";
-import { Inter } from "next/font/google";
-import Link from "next/link"; // <--- Indispensable pour le lien
-import WelcomeModal from "@/components/WelcomeModal";
+import './globals.css'
+import { Inter } from 'next/font/google'
+import Link from 'next/link'
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ['latin'] })
 
+// --- CONFIGURATION METADATA GLOBALE ---
 export const metadata = {
-  title: "Sorties MTP",
-  description: "L'app des soirées étudiantes",
-};
+  metadataBase: new URL('https://sorties-mtp.netlify.app'), // ⚠️ METS TON VRAI LIEN NETLIFY ICI (très important)
+  title: {
+    default: 'Sorties MTP - Organise tes soirées sans galère',
+    template: '%s | Sorties MTP', // Ex: "Anniv Thomas | Sorties MTP"
+  },
+  description: "L'outil gratuit pour les étudiants montpelliérains. Crée ta soirée, partage le lien, gère les invités. Simple et sans compte.",
+  openGraph: {
+    title: 'Sorties MTP',
+    description: 'Tes soirées étudiantes, sans la galère.',
+    url: 'https://sorties-mtp.netlify.app',
+    siteName: 'Sorties MTP',
+    locale: 'fr_FR',
+    type: 'website',
+  },
+}
 
 export default function RootLayout({ children }) {
   return (
     <html lang="fr">
       <body className={inter.className}>
-        <WelcomeModal />
+        {children}
         
-        {/* Le contenu principal de tes pages (Dashboard, Login, etc.) */}
-        <div className="min-h-screen">
-            {children}
-        </div>
-
-        {/* PIED DE PAGE PERMANENT (CGU) */}
-        {/* z-0 pour rester derrière les popups, pb-4 pour l'espace */}
-        <footer className="py-6 pb-8 text-center text-xs text-slate-400 dark:text-slate-600">
-             <p>
-                 Sorties MTP (MVP) • 
-                 <Link 
-                    href="/legal" 
-                    className="ml-1 underline hover:text-blue-500 dark:hover:text-blue-400 transition"
-                 >
-                    Mentions Légales & CGU
-                 </Link>
-             </p>
+        {/* FOOTER PERSISTANT (Optionnel, pour le style) */}
+        <footer className="fixed bottom-2 right-2 z-50 opacity-50 hover:opacity-100 transition-opacity pointer-events-none">
+            <span className="text-[10px] text-slate-400 bg-white/80 dark:bg-slate-900/80 px-2 py-1 rounded-full backdrop-blur border border-slate-200 dark:border-slate-800">
+                Bêta v1.0
+            </span>
         </footer>
-
       </body>
     </html>
-  );
+  )
 }
