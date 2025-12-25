@@ -43,7 +43,7 @@ export default function AdminPanel() {
   async function fetchPendingReports() {
     const { data } = await supabase
       .from('reports')
-      .select('*, events(title, description, location_name, meeting_point, organizer_id, is_cancelled, cancellation_reason, cancelled_at), profiles(pseudo)')
+      .select('*, events(title, description, location_name, meeting_point, organizer_id, is_cancelled, cancellation_reason, cancelled_at, start_time), profiles(pseudo)')
       .eq('status', 'pending')
       .order('created_at', { ascending: false })
     setReports(data || [])
@@ -143,6 +143,23 @@ export default function AdminPanel() {
     return currentEvent?.description
   }
 
+  // Helper pour le statut intelligent (Même logique que le Dashboard)
+  const getEventStatusBadge = (evt) => {
+    if (!evt) return null
+    
+    const isFinished = new Date(evt.start_time) < new Date()
+    const isCancelled = evt.is_cancelled
+    const isBanned = evt.is_banned
+    const isVisible = evt.is_visible
+
+    if (isBanned) return <span className="bg-red-100 text-red-600 text-[10px] font-bold px-1.5 rounded uppercase">Banni</span>
+    if (isCancelled) return <span className="bg-red-100 text-red-600 text-[10px] font-bold px-1.5 rounded uppercase">Annulé</span>
+    if (isFinished) return <span className="bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400 text-[10px] font-bold px-1.5 rounded uppercase">Terminé</span>
+    if (!isVisible) return <span className="bg-orange-100 text-orange-600 text-[10px] font-bold px-1.5 rounded uppercase">Masqué</span>
+    
+    return <span className="bg-green-100 text-green-600 text-[10px] font-bold px-1.5 rounded uppercase">Actif</span>
+  }
+
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white">Chargement du QG...</div>
 
   return (
@@ -152,7 +169,7 @@ export default function AdminPanel() {
       <div className="w-full md:w-1/3 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 h-screen overflow-y-auto flex flex-col">
         <div className="sticky top-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-b border-slate-200 dark:border-slate-800 p-4 z-10 space-y-4">
             
-            {/* HEADER MODIFIÉ AVEC LE BOUTON UTILISATEURS */}
+            {/* HEADER */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <Link href="/dashboard" className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-500">
@@ -164,7 +181,6 @@ export default function AdminPanel() {
                 </div>
                 
                 <div className="flex gap-2">
-                    {/* BOUTON UTILISATEURS (Nouveau) */}
                     <Link 
                         href="/admin/users" 
                         className="p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 transition" 
@@ -172,13 +188,9 @@ export default function AdminPanel() {
                     >
                         <Users size={20} />
                     </Link>
-
-                    {/* BOUTON CNI (Existant) */}
                     <Link href="/admin/verification" className="p-2 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-900/40 transition">
                         <IdCard size={20} />
                     </Link>
-
-                    {/* BOUTON PARTENARES */}
                     <Link href="/admin/partners" className="p-2 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/40 transition">
                         <Handshake size={20} />
                     </Link>
@@ -204,7 +216,10 @@ export default function AdminPanel() {
                 <div className="divide-y divide-slate-100 dark:divide-slate-800">
                     {reports.map(report => (
                         <div key={report.id} onClick={() => handleSelect(report, 'report_ticket')} className={`p-4 cursor-pointer transition hover:bg-slate-50 dark:hover:bg-slate-800 ${selectedItem?.id === report.id ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}>
-                            <div className="flex justify-between items-start mb-1"><span className="bg-red-100 text-red-600 text-[10px] font-bold px-2 py-0.5 rounded uppercase">Urgent</span><span className="text-xs text-slate-400">{new Date(report.created_at).toLocaleDateString()}</span></div>
+                            <div className="flex justify-between items-start mb-1">
+                                <span className="bg-red-100 text-red-600 text-[10px] font-bold px-2 py-0.5 rounded uppercase">Urgent</span>
+                                <span className="text-xs text-slate-400">{new Date(report.created_at).toLocaleDateString()}</span>
+                            </div>
                             <h3 className="font-bold text-sm text-slate-800 dark:text-white mb-1 truncate">{report.events?.title || "Event supprimé"}</h3>
                             <p className="text-sm text-slate-500 dark:text-slate-400 truncate">Par @{report.profiles?.pseudo || 'Anonyme'}</p>
                             <p className="text-xs text-red-500 mt-1 font-medium line-clamp-1">"{report.reason}"</p>
@@ -213,16 +228,15 @@ export default function AdminPanel() {
                     {reports.length === 0 && <p className="text-center p-8 text-slate-400 flex flex-col items-center gap-2"><CheckCircle size={32}/>Tout est propre !</p>}
                 </div>
             )}
+            
             {activeTab === 'database' && (
                 <div className="divide-y divide-slate-100 dark:divide-slate-800">
                     {filteredEvents.map(event => (
                         <div key={event.id} onClick={() => handleSelect(event, 'event_entry')} className={`p-4 cursor-pointer transition hover:bg-slate-50 dark:hover:bg-slate-800 ${selectedItem?.id === event.id ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}>
                             <div className="flex justify-between items-start mb-1">
                                 <div className="flex gap-1">
-                                    {event.is_banned && <span className="bg-red-100 text-red-600 text-[10px] font-bold px-1.5 rounded uppercase">Banni</span>}
-                                    {event.is_cancelled && !event.is_banned && <span className="bg-red-100 text-red-600 text-[10px] font-bold px-1.5 rounded uppercase">Annulé</span>}
-                                    {!event.is_visible && !event.is_banned && !event.is_cancelled && <span className="bg-slate-100 text-slate-500 text-[10px] font-bold px-1.5 rounded uppercase">Terminé</span>}
-                                    {event.is_visible && !event.is_cancelled && <span className="bg-green-100 text-green-600 text-[10px] font-bold px-1.5 rounded uppercase">Actif</span>}
+                                    {/* UTILISATION DU HELPER POUR LE BADGE DE STATUT */}
+                                    {getEventStatusBadge(event)}
                                 </div>
                                 {event.reports && event.reports.length > 0 && <span className="flex items-center gap-1 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 text-[10px] font-bold px-1.5 rounded-full"><AlertTriangle size={10} /> {event.reports.length}</span>}
                             </div>
@@ -289,7 +303,14 @@ export default function AdminPanel() {
 
                         {/* 3. L'ÉVÉNEMENT */}
                         <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
-                            <div className="flex justify-between items-start mb-4"><h3 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2"><MapPin className="text-purple-500"/> L'Événement</h3><button onClick={archiveEvent} className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-red-700 transition flex items-center gap-2"><Archive size={16}/> Archiver</button></div>
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="flex items-center gap-3">
+                                    <h3 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2"><MapPin className="text-purple-500"/> L'Événement</h3>
+                                    {/* BADGE DE STATUT DANS LE DÉTAIL */}
+                                    {getEventStatusBadge(currentEvent)}
+                                </div>
+                                <button onClick={archiveEvent} className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-red-700 transition flex items-center gap-2"><Archive size={16}/> Archiver</button>
+                            </div>
                             
                             {/* ALERTE ANNULATION */}
                             {currentEvent?.is_cancelled && (

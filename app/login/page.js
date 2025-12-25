@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { AlertCircle, Lock, Mail } from 'lucide-react'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -30,18 +31,26 @@ export default function LoginPage() {
         if (!termsAccepted) throw new Error("Tu dois accepter les conditions.")
         if (!pseudo || !nom || !prenom || !dob) throw new Error("Tout remplir SVP.")
 
-        const { data: authData, error: authError } = await supabase.auth.signUp({ email, password })
-        if (authError) throw authError
+        // 1. On envoie tout dans les méta-données pour le Trigger SQL
+        const { data: authData, error: authError } = await supabase.auth.signUp({ 
+          email, 
+          password,
+          options: {
+            data: {
+              pseudo: pseudo,
+              nom: nom,
+              prenom: prenom,
+              date_naissance: dob,
+              terms_accepted_at: new Date().toISOString()
+            }
+          }
+        })
 
-        if (authData?.user) {
-          const { error: profileError } = await supabase.from('profiles').insert([{
-            id: authData.user.id, pseudo, nom, prenom, date_naissance: dob,
-            terms_accepted_at: new Date().toISOString()
-          }])
-          if (profileError) throw new Error("Erreur profil : " + profileError.message)
-          alert("Compte créé !")
-          setIsSignUp(false)
-        }
+        if (authError) throw authError
+        
+        alert("Compte créé ! Vérifie tes emails pour confirmer.")
+        setIsSignUp(false)
+
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password })
         if (error) throw error
@@ -74,34 +83,65 @@ export default function LoginPage() {
         )}
 
         <form onSubmit={handleAuth} className="space-y-4">
+          
+          {/* EMAIL */}
           <div>
             <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Email</label>
-            <input 
-              type="email" required
-              className="w-full rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition"
-              value={email} onChange={(e) => setEmail(e.target.value)}
-            />
+            <div className="relative">
+                <input 
+                type="email" required
+                className="w-full rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition pl-10"
+                value={email} onChange={(e) => setEmail(e.target.value)}
+                />
+                <Mail size={18} className="absolute left-3 top-3.5 text-slate-400"/>
+            </div>
+            {isSignUp && (
+                <p className="text-[10px] text-slate-500 mt-1 ml-1">
+                    Servira d'identifiant de connexion unique. <strong className="text-slate-600 dark:text-slate-300">Non modifiable.</strong>
+                </p>
+            )}
           </div>
+
+          {/* PASSWORD */}
           <div>
             <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Mot de passe</label>
-            <input 
-              type="password" required minLength={6}
-              className="w-full rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition"
-              value={password} onChange={(e) => setPassword(e.target.value)}
-            />
+            <div className="relative">
+                <input 
+                type="password" required minLength={6}
+                className="w-full rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition pl-10"
+                value={password} onChange={(e) => setPassword(e.target.value)}
+                />
+                <Lock size={18} className="absolute left-3 top-3.5 text-slate-400"/>
+            </div>
+            {isSignUp && (
+                <p className="text-[10px] text-slate-500 mt-1 ml-1">
+                    Tu pourras le modifier plus tard via ton profil.
+                </p>
+            )}
           </div>
 
           {isSignUp && (
-            <div className="space-y-4 animate-in fade-in slide-in-from-top-4">
-               {/* Je simplifie l'affichage pour la réponse, mais garde tes champs Nom/Prénom/Date comme avant */}
+            <div className="space-y-4 animate-in fade-in slide-in-from-top-4 pt-2">
+               
+               {/* ALERTE INFO IMMUABLE */}
+               <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-100 dark:border-blue-800 flex gap-2 items-start">
+                    <AlertCircle size={16} className="text-blue-600 dark:text-blue-400 shrink-0 mt-0.5"/>
+                    <p className="text-xs text-blue-800 dark:text-blue-200 leading-tight">
+                        Attention : Pour garantir la confiance entre étudiants, ton <strong>Identité</strong> (Nom, Prénom, Âge) et ton <strong>Pseudo</strong> ne seront <u>plus modifiables</u> une fois inscrit.
+                    </p>
+               </div>
+
                <div className="grid grid-cols-2 gap-3">
                  <input type="text" placeholder="Pseudo" required className="col-span-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-3 text-slate-900 dark:text-white outline-none" value={pseudo} onChange={(e) => setPseudo(e.target.value)} />
                  <input type="text" placeholder="Prénom" required className="rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-3 text-slate-900 dark:text-white outline-none" value={prenom} onChange={(e) => setPrenom(e.target.value)} />
                  <input type="text" placeholder="Nom" required className="rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-3 text-slate-900 dark:text-white outline-none" value={nom} onChange={(e) => setNom(e.target.value)} />
                </div>
-               <input type="date" required className="w-full rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-3 text-slate-900 dark:text-white outline-none" value={dob} onChange={(e) => setDob(e.target.value)} />
                
-               {/* Checkbox légale avec texte adapté dark mode */}
+               <div>
+                   <input type="date" required className="w-full rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-3 text-slate-900 dark:text-white outline-none" value={dob} onChange={(e) => setDob(e.target.value)} />
+                   <p className="text-[10px] text-slate-400 mt-1 ml-1">Date de naissance (Non modifiable).</p>
+               </div>
+               
                <div className="flex items-start gap-3 pt-2">
                 <input id="terms" type="checkbox" required checked={termsAccepted} onChange={(e) => setTermsAccepted(e.target.checked)} className="mt-1" />
                 <div className="text-xs text-slate-600 dark:text-slate-400">

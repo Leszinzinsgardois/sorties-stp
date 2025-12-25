@@ -33,9 +33,16 @@ export default function Dashboard() {
     setLoading(false)
   }
 
+  // --- LOGIQUE DE FILTRAGE MISE À JOUR ---
   const filteredEvents = events.filter(event => {
     if (showArchived) return true 
-    return event.is_visible // Montre les actifs (même annulés, tant qu'ils ne sont pas archivés par le temps)
+    
+    // On calcule si l'événement est terminé (Date actuelle > Date événement)
+    const isFinished = new Date(event.start_time) < new Date()
+    
+    // On affiche l'event SEULEMENT s'il est visible ET qu'il n'est pas encore passé
+    // (Les annulés restent visibles pour que tu puisses les gérer, sauf s'ils sont vieux)
+    return event.is_visible && !isFinished
   })
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 text-slate-500">Chargement...</div>
@@ -54,7 +61,7 @@ export default function Dashboard() {
             className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition ${showArchived ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400'}`}
         >
             {showArchived ? <Clock size={14}/> : <Filter size={14}/>}
-            {showArchived ? 'Masquer Terminés' : 'Afficher tout'}
+            {showArchived ? 'Masquer Terminés' : 'Historique'}
         </button>
       </div>
 
@@ -74,13 +81,29 @@ export default function Dashboard() {
             )}
           </div>
         ) : (
-          filteredEvents.map(event => (
-            <div key={event.id} className={`bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border relative hover:scale-[1.02] transition-transform ${!event.is_visible ? 'opacity-70 border-slate-100 dark:border-slate-800 grayscale-[0.5]' : 'border-slate-100 dark:border-slate-800'} ${event.is_cancelled ? 'border-red-200 dark:border-red-900/30' : ''}`}>
+          filteredEvents.map(event => {
+            // Calcul du statut pour l'affichage (Badge)
+            const isFinished = new Date(event.start_time) < new Date()
+            const isCancelled = event.is_cancelled
+            const isVisible = event.is_visible // Visible manuellement par l'admin
+
+            return (
+            <div key={event.id} className={`bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border relative hover:scale-[1.02] transition-transform ${isFinished || !isVisible ? 'opacity-70 border-slate-100 dark:border-slate-800 grayscale-[0.5]' : 'border-slate-100 dark:border-slate-800'} ${isCancelled ? 'border-red-200 dark:border-red-900/30' : ''}`}>
               
               <div className="flex justify-between items-start mb-3">
                 <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100 truncate pr-4">{event.title}</h3>
-                <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide shrink-0 ${event.is_cancelled ? 'bg-red-600 text-white' : event.is_visible ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-slate-100 text-slate-500'}`}>
-                  {event.is_cancelled ? 'Annulé' : (event.is_visible ? 'En ligne' : 'Terminé')}
+                
+                {/* BADGE DE STATUT INTELLIGENT */}
+                <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide shrink-0 
+                    ${isCancelled ? 'bg-red-600 text-white' 
+                    : isFinished ? 'bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400' 
+                    : !isVisible ? 'bg-orange-100 text-orange-600'
+                    : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'}`}>
+                  
+                  {isCancelled ? 'Annulé' 
+                   : isFinished ? 'Terminé' 
+                   : !isVisible ? 'Masqué'
+                   : 'En ligne'}
                 </span>
               </div>
               
@@ -105,18 +128,20 @@ export default function Dashboard() {
               </div>
 
               <div className="flex gap-2 mt-4">
-                {event.is_visible && !event.is_cancelled && (
+                {/* On cache le bouton modifier si c'est terminé ou annulé pour éviter de modifier le passé */}
+                {!isFinished && !isCancelled && (
                     <Link href={`/dashboard/edit/${event.id}`} className="p-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition" title="Modifier">
                         <Edit3 size={20} />
                     </Link>
                 )}
-                <Link href={`/event/${event.id}`} className={`flex-1 flex items-center justify-center font-bold py-3 rounded-xl transition ${event.is_cancelled ? 'bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400' : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'}`}>
-                    {event.is_cancelled ? 'Voir Annulation' : (event.is_visible ? 'Gérer & Partager' : 'Voir les stats (Archivé)')}
+                
+                <Link href={`/event/${event.id}`} className={`flex-1 flex items-center justify-center font-bold py-3 rounded-xl transition ${isCancelled ? 'bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400' : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'}`}>
+                    {isCancelled ? 'Voir Annulation' : (isFinished ? 'Voir (Archivé)' : 'Gérer & Partager')}
                 </Link>
               </div>
 
             </div>
-          ))
+          )})
         )}
       </div>
 

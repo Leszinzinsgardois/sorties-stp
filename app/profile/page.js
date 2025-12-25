@@ -12,8 +12,7 @@ export default function ProfilePage() {
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
 
-  // États formulaires
-  const [email, setEmail] = useState('')
+  // États formulaires (Email retiré car non modifiable)
   const [passwords, setPasswords] = useState({ current: '', new: '', confirm: '' })
 
   useEffect(() => {
@@ -24,19 +23,11 @@ export default function ProfilePage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/login'); return }
     setUser(user)
-    setEmail(user.email)
+    // On n'a plus besoin de stocker l'email dans un state modifiable
 
     const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
     setProfile(data)
     setLoading(false)
-  }
-
-  // --- GESTION EMAIL ---
-  async function updateEmail() {
-    if (email === user.email) return
-    const { error } = await supabase.auth.updateUser({ email })
-    if (error) alert("Erreur: " + error.message)
-    else alert("Lien de confirmation envoyé à la nouvelle adresse !")
   }
 
   // --- GESTION MOT DE PASSE ---
@@ -107,11 +98,10 @@ export default function ProfilePage() {
                 <div>
                     <label className="text-xs font-bold text-slate-500 uppercase">Né(e) le</label>
                     <div className="p-3 bg-slate-100 dark:bg-slate-800 rounded-xl text-slate-600 dark:text-slate-300 font-medium cursor-not-allowed">
-                        {new Date(profile?.date_naissance).toLocaleDateString()}
+                        {profile?.date_naissance ? new Date(profile.date_naissance).toLocaleDateString() : 'Non renseigné'}
                     </div>
                 </div>
             </div>
-            {/* Le petit footer que tu aimes */}
             <p className="text-xs text-slate-400 italic pt-2 flex items-center gap-1.5">
                 <ShieldCheck size={14} className="text-green-500"/> Identité vérifiée (si vérification par CNI effectuée) et non modifiable.
             </p>
@@ -148,36 +138,33 @@ export default function ProfilePage() {
         <section className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 space-y-6">
             <h2 className="font-bold text-slate-800 dark:text-white flex items-center gap-2"><Lock size={20} className="text-purple-500"/> Sécurité & Connexion</h2>
             
-            {/* Email */}
+            {/* Email (Lecture Seule) */}
             <div className="space-y-2">
                 <label className="text-xs font-bold text-slate-500 uppercase">Adresse E-mail</label>
                 <div className="flex gap-2">
                     <input 
                         type="email" 
-                        value={email} onChange={e => setEmail(e.target.value)}
-                        className="flex-1 p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-purple-500 transition text-slate-900 dark:text-white"
+                        value={user?.email || ''} 
+                        readOnly
+                        className="flex-1 p-3 bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-500 dark:text-slate-400 cursor-not-allowed"
+                        title="L'adresse e-mail sert d'identifiant et ne peut pas être modifiée ici."
                     />
-                    <button onClick={updateEmail} disabled={email === user.email} className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 p-3 rounded-xl hover:bg-purple-200 dark:hover:bg-purple-900/50 disabled:opacity-50 transition">
-                        <Save size={20} />
-                    </button>
                 </div>
+                <p className="text-[10px] text-slate-400 italic">Identifiant de connexion (non modifiable).</p>
             </div>
 
             <hr className="border-slate-100 dark:border-slate-800" />
 
-            {/* Mot de passe - LAYOUT RESPONSIVE MODIFIÉ ICI */}
+            {/* Mot de passe */}
             <div className="space-y-3">
                 <label className="text-xs font-bold text-slate-500 uppercase">Changer de mot de passe</label>
                 
-                {/* Ligne 1 : Mot de passe actuel */}
                 <input 
                     type="password" placeholder="Mot de passe actuel"
                     value={passwords.current} onChange={e => setPasswords({...passwords, current: e.target.value})}
                     className="w-full p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-purple-500 transition text-slate-900 dark:text-white"
                 />
                 
-                {/* Ligne 2 & 3 (Mobile) ou Ligne 2 (PC) : Nouveau + Confirmer */}
-                {/* 'flex-col' empile sur mobile, 'md:flex-row' met côte à côte sur PC */}
                 <div className="flex flex-col md:flex-row gap-2">
                     <input 
                         type="password" placeholder="Nouveau mot de passe"
