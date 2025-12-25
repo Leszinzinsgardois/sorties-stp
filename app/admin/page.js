@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Eye, X, ShieldAlert, CheckCircle, MapPin, User, Users, AlertTriangle, ArrowLeft, Ban, Archive, Database, Search, Filter, ShieldCheck, XCircle, IdCard, Clock, FileText, ScanFace, AlertOctagon, Handshake } from 'lucide-react'
+import { Eye, X, ShieldAlert, CheckCircle, MapPin, User, Users, AlertTriangle, ArrowLeft, Ban, Archive, Database, Search, Filter, ShieldCheck, XCircle, IdCard, Clock, FileText, ScanFace, AlertOctagon, Handshake, Megaphone } from 'lucide-react'
 
 export default function AdminPanel() {
   const router = useRouter()
@@ -179,8 +179,10 @@ export default function AdminPanel() {
                         <ShieldAlert /> Modération
                     </h1>
                 </div>
-                
                 <div className="flex gap-2">
+                    <Link href="/admin/communications" className="p-2 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 rounded-lg hover:bg-yellow-100 dark:hover:bg-yellow-900/40 transition">
+                        <Megaphone size={20} />
+                    </Link>
                     <Link 
                         href="/admin/users" 
                         className="p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 transition" 
