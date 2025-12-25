@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Eye, X, ShieldAlert, CheckCircle, MapPin, User, Users, AlertTriangle, ArrowLeft, Ban, Archive, Database, Search, Filter, ShieldCheck, XCircle, IdCard, Clock, FileText, ScanFace, AlertOctagon } from 'lucide-react'
+import { Eye, X, ShieldAlert, CheckCircle, MapPin, User, Users, AlertTriangle, ArrowLeft, Ban, Archive, Database, Search, Filter, ShieldCheck, XCircle, IdCard, Clock, FileText, ScanFace, AlertOctagon, Handshake } from 'lucide-react'
 
 export default function AdminPanel() {
   const router = useRouter()
@@ -176,6 +176,11 @@ export default function AdminPanel() {
                     {/* BOUTON CNI (Existant) */}
                     <Link href="/admin/verification" className="p-2 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-900/40 transition">
                         <IdCard size={20} />
+                    </Link>
+
+                    {/* BOUTON PARTENARES */}
+                    <Link href="/admin/partners" className="p-2 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/40 transition">
+                        <Handshake size={20} />
                     </Link>
                 </div>
             </div>
