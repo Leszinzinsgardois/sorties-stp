@@ -158,7 +158,7 @@ export default function Home() {
                         <Link href="/about" className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg text-sm font-bold transition">
                             À propos du développeur <ArrowRight size={16}/>
                         </Link>
-                        <a href="mailto:https://forms.gle/wdadEqpkfzXU8KoRA" className="inline-flex items-center gap-2 bg-white text-slate-900 hover:bg-slate-100 px-4 py-2 rounded-lg text-sm font-bold transition shadow-lg">
+                        <a href="https://forms.gle/wdadEqpkfzXU8KoRA" className="inline-flex items-center gap-2 bg-white text-slate-900 hover:bg-slate-100 px-4 py-2 rounded-lg text-sm font-bold transition shadow-lg">
                             <MessageCircle size={16}/> Suggérer une idée
                         </a>
                     </div>
