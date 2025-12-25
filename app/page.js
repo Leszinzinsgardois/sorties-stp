@@ -152,9 +152,17 @@ export default function Home() {
                         <p className="flex items-center gap-2"><CheckCircle size={16} className="text-green-500"/> Vos retours construisent les prochaines versions.</p>
                         <p className="flex items-center gap-2"><CheckCircle size={16} className="text-green-500"/> Ambition : devenir la référence locale.</p>
                     </div>
-                    <Link href="/about" className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg text-sm font-bold transition">
-                        À propos du développeur <ArrowRight size={16}/>
-                    </Link>
+                    
+                    {/* BOUTONS D'ACTION COMMUNAUTÉ */}
+                    <div className="flex flex-wrap gap-3">
+                        <Link href="/about" className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg text-sm font-bold transition">
+                            À propos du développeur <ArrowRight size={16}/>
+                        </Link>
+                        <a href="mailto:contact@oukonsort.fr" className="inline-flex items-center gap-2 bg-white text-slate-900 hover:bg-slate-100 px-4 py-2 rounded-lg text-sm font-bold transition shadow-lg">
+                            <MessageCircle size={16}/> Suggérer une idée
+                        </a>
+                    </div>
+
                 </div>
                 <div className="bg-white/10 backdrop-blur-sm p-6 rounded-2xl border border-white/10 max-w-sm">
                     <h3 className="font-bold text-lg mb-2 flex items-center gap-2"><Zap size={18} className="text-yellow-400"/> Vision</h3>

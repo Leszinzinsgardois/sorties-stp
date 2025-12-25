@@ -1,168 +1,299 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
+import { ArrowLeft, MapPin, TramFront, Calendar, Info, AlignLeft, Type, X, Plus, Users, Save, Trash2 } from 'lucide-react'
 import Link from 'next/link'
-import { ArrowLeft, Save, Trash2, AlertTriangle, MapPin, Clock, ChevronDown, X, AlertOctagon } from 'lucide-react'
 
-const TRAM_OPTIONS = ["Ligne 1", "Ligne 2", "Ligne 3", "Ligne 4", "Ligne 5", "Bus / Autre"]
+// TRAMWAY DATA
+const TRAM_LINES = {
+  "Ligne 1": ["Mosson","Stade de la Mosson","Halles de la Paillade","Saint-Paul","Hauts de Massane","Euromédecine","Malbosc – Domaine d’O","Château d’O","Occitanie – Hôpitaux Facultés","Hôpital Lapeyronie","Université Montpellier – Triolet","Saint-Éloi","Boutonnet – Cité des Arts","Stade Philippidès","Albert 1er – Saint-Charles","Louis Blanc – Agora de la Danse","Corum","Comédie","Gare Saint-Roch","Du Guesclin","Antigone","Léon Blum","Place de l’Europe","Rives du Lez","Moularès – Hôtel de Ville","Port Marianne","Millénaire","Place de France","Odysseum","Gare Sud de France"],
+  "Ligne 2": ["Saint-Jean-de-Védas Centre","Saint-Jean-le-Sec","La Condamine","Victoire 2","Sabines","Villeneuve d’Angoulême","Croix d’Argent","Mas Drevon","Lemasson","Saint-Cléophas","Nouveau Saint-Roch","Rondelet","Gare Saint-Roch","Comédie","Corum","Beaux-Arts","Jeu de Mail des Abbés","Aiguelongue","Saint-Lazare","Charles de Gaulle","Clairval","La Galine","Centurions","Notre-Dame de Sablassou","Aube Rouge","Via Domitia","Georges Pompidou","Jacou"],
+  "Ligne 3": ["Juvignac","Mosson","Celleneuve","Pilory","Hôtel du Département","Pergola","Tonnelles","Jules Guesde","Astruc","Les Arceaux","Plan Cabanes","Gambetta","Observatoire","Gare Saint-Roch – République","Place Carnot","Voltaire","Rives du Lez – Consuls de Mer","Moularès – Hôtel de Ville","Port Marianne","Pablo Picasso","Boirargues","Cougourlude","Lattes Centre","Pérols Étang de l’Or"],
+  "Ligne 4": ["Garcia Lorca","Restanque","Saint-Martin","Nouveau Saint-Roch","Rondelet","Gare Saint-Roch – République","Observatoire","Saint-Guilhem – Courreau","Peyrou – Arc de Triomphe","Albert 1er – Cathédrale","Louis Blanc – Agora de la Danse","Corum","Les Aubes","Pompignane","Place de l’Europe","Rives du Lez","Georges Frêche – Hôtel de Ville","La Rauze","Garcia Lorca"],
+  "Ligne 5": ["Clapiers","Montferrier-sur-Lez","Agropolis","Plan des 4 Seigneurs","CNRS – Zoo du Lunaret","Pôle Chimie Balard","Université Paul Valéry","Saint-Éloi – Docteur Pezet","Boutonnet – Cité des Arts","Stade Philippidès","Albert 1er – Saint-Charles","Albert 1er – Jardin des Plantes","Peyrou – Arc de Triomphe","Saint-Guilhem – Courreau","Gambetta","Parc Clemenceau","Place du 8 Mai 1945","Cité Créative – Parc Montcalm","Chamberte – Les Roses","Estanove","Yves du Manoir","Ovalie","Parc Bagatelle","Parc Font-Colombe","Parc des Bouisses","Grès de Montpellier"]
+};
 
-export default function EditEventPage({ params }) {
+export default function EditEvent() {
   const router = useRouter()
+  const { id } = useParams()
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [event, setEvent] = useState(null)
+  const [user, setUser] = useState(null)
   
-  // Modale Annulation
-  const [showCancelModal, setShowCancelModal] = useState(false)
-  const [cancelReason, setCancelReason] = useState('')
+  // Données originales pour comparaison
+  const [originalEvent, setOriginalEvent] = useState(null)
+  const [currentParticipantsCount, setCurrentParticipantsCount] = useState(0)
 
-  const [formData, setFormData] = useState({
-    title: '', description: '', tram_stop: 'Ligne 1', start_time: ''
-  })
+  // Formulaire
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [date, setDate] = useState('')
+  const [time, setTime] = useState('')
+  const [locationType, setLocationType] = useState('public')
+  const [locationName, setLocationName] = useState('')
+  const [meetingPoint, setMeetingPoint] = useState('')
+  
+  // Tram
+  const [selectedLine, setSelectedLine] = useState('Ligne 1')
+  const [selectedStop, setSelectedStop] = useState('')
+  const [stopSearch, setStopSearch] = useState('')
+  const [showStopSuggestions, setShowStopSuggestions] = useState(false)
 
-  useEffect(() => { fetchEvent() }, [])
+  // Advanced
+  const [maxParticipants, setMaxParticipants] = useState(30)
+  const [tags, setTags] = useState([])
+  const [newTagLabel, setNewTagLabel] = useState('')
+  const [newTagValue, setNewTagValue] = useState('')
+  const [isCancelled, setIsCancelled] = useState(false)
 
-  async function fetchEvent() {
-    const resolvedParams = await params
+  useEffect(() => {
+    checkUserAndEvent()
+  }, [])
+
+  async function checkUserAndEvent() {
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { router.push('/login'); return }
+    if (!user) router.push('/login')
+    setUser(user)
 
-    const { data, error } = await supabase.from('events').select('*').eq('id', resolvedParams.id).single()
+    // Récup event + Compte participants
+    const { data: event, error } = await supabase.from('events').select('*').eq('id', id).single()
+    if (error || event.organizer_id !== user.id) {
+        alert("Accès interdit.")
+        router.push('/dashboard')
+        return
+    }
 
-    if (error || data.organizer_id !== user.id) { router.push('/dashboard'); return }
+    setOriginalEvent(event) // Sauvegarde de l'état initial pour le diff
 
-    setEvent(data)
-    setFormData({
-      title: data.title,
-      description: data.description || '',
-      tram_stop: data.tram_stop || 'Ligne 1',
-      start_time: new Date(data.start_time).toISOString().slice(0, 16)
-    })
+    const { count } = await supabase.from('participants').select('*', { count: 'exact', head: true }).eq('event_id', id)
+    setCurrentParticipantsCount(count || 0)
+
+    // Remplissage form
+    setTitle(event.title)
+    setDescription(event.description || '')
+    
+    const d = new Date(event.start_time)
+    setDate(d.toISOString().split('T')[0])
+    setTime(d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }))
+
+    setLocationType(event.location_type)
+    if (event.location_type === 'public') setLocationName(event.location_name)
+    else setMeetingPoint(event.meeting_point)
+
+    // Parsing Tram
+    if (event.tram_stop && event.tram_stop.includes(' - ')) {
+        const [l, s] = event.tram_stop.split(' - ')
+        setSelectedLine(l)
+        setSelectedStop(s)
+    } else {
+        setSelectedStop(event.tram_stop)
+    }
+
+    setMaxParticipants(event.max_participants)
+    setTags(event.additional_info || [])
+    setIsCancelled(event.is_cancelled)
     setLoading(false)
   }
 
-  async function handleUpdate(e) {
+  // Tags Logic
+  const addTag = () => { if (newTagLabel && newTagValue) { setTags([...tags, { label: newTagLabel, value: newTagValue }]); setNewTagLabel(''); setNewTagValue('') } }
+  const removeTag = (index) => { setTags(tags.filter((_, i) => i !== index)) }
+
+  const handleUpdate = async (e) => {
     e.preventDefault()
-    setSaving(true)
-    const { data: { user } } = await supabase.auth.getUser()
+    setLoading(true)
 
-    let changesLog = []
-    if (formData.title !== event.title) changesLog.push(`📝 Titre : "${event.title}" ➝ "${formData.title}"`)
-    if (formData.tram_stop !== event.tram_stop) changesLog.push(`🚊 Tram : "${event.tram_stop}" ➝ "${formData.tram_stop}"`)
-    if (formData.description !== (event.description || '')) changesLog.push(`📄 Description modifiée`)
-    
-    const newDateIso = new Date(formData.start_time).toISOString()
-    const oldDateIso = new Date(event.start_time).toISOString()
-    let initialDateToSave = event.initial_start_time
+    try {
+      if (!title || !date || !time) throw new Error("Titre, date et heure requis.")
+      
+      if (maxParticipants < currentParticipantsCount) {
+        throw new Error(`Impossible de réduire la jauge à ${maxParticipants} car il y a déjà ${currentParticipantsCount} inscrits.`)
+      }
 
-    if (newDateIso !== oldDateIso) {
-        changesLog.push(`⏰ Horaire : ${new Date(event.start_time).toLocaleString()} ➝ ${new Date(formData.start_time).toLocaleString()}`)
-        if (!event.initial_start_time) initialDateToSave = event.start_time
+      const startDateTime = new Date(`${date}T${time}`).toISOString()
+      const endDateTime = new Date(new Date(`${date}T${time}`).getTime() + 5 * 60 * 60 * 1000).toISOString()
+      const tramString = `${selectedLine} - ${selectedStop}`
+
+      // --- GÉNÉRATION DU LOG DÉTAILLÉ (DIFF) ---
+      let changes = []
+      
+      // Comparaison Horaire
+      const oldTime = new Date(originalEvent.start_time).toISOString()
+      if (startDateTime !== oldTime) {
+         changes.push(`🕗 Horaire : ${new Date(originalEvent.start_time).toLocaleString()} -> ${new Date(startDateTime).toLocaleString()}`)
+      }
+
+      // Comparaison Lieu
+      if (locationType !== originalEvent.location_type) changes.push(`📍 Type Lieu : ${originalEvent.location_type} -> ${locationType}`)
+      if (locationType === 'public' && locationName !== originalEvent.location_name) changes.push(`📍 Lieu : "${originalEvent.location_name}" -> "${locationName}"`)
+      if (locationType === 'private' && meetingPoint !== originalEvent.meeting_point) changes.push(`📍 RDV : "${originalEvent.meeting_point}" -> "${meetingPoint}"`)
+      
+      // Comparaison Tram
+      if (tramString !== originalEvent.tram_stop) changes.push(`🚃 Tram : "${originalEvent.tram_stop}" -> "${tramString}"`)
+      
+      // Comparaison Jauge
+      if (maxParticipants !== originalEvent.max_participants) changes.push(`👥 Jauge : ${originalEvent.max_participants} -> ${maxParticipants}`)
+      
+      // --- MODIF ICI : Comparaison Titre/Desc détaillée ---
+      if (title !== originalEvent.title) {
+          changes.push(`📝 Titre : "${originalEvent.title}" -> "${title}"`)
+      }
+      if (description !== originalEvent.description) {
+          // On structure la description sur plusieurs lignes pour la lisibilité
+          changes.push(`📝 Description :\n   AVANT : "${originalEvent.description || ''}"\n   APRÈS : "${description}"`)
+      }
+
+      // --- GESTION ALERTE HORAIRE ---
+      // Si l'horaire change, on sauvegarde l'horaire ORIGINAL dans 'initial_start_time' 
+      // (seulement si c'est la première modif d'horaire, sinon on garde le tout premier)
+      let initialStartTimeToSave = originalEvent.initial_start_time
+      if (startDateTime !== oldTime && !originalEvent.initial_start_time) {
+          initialStartTimeToSave = originalEvent.start_time // On fige l'heure originale
+      }
+
+      // 1. UPDATE EVENT
+      const { error } = await supabase.from('events').update({
+        title, description,
+        start_time: startDateTime, end_time: endDateTime,
+        location_type: locationType,
+        location_name: locationType === 'public' ? locationName : null,
+        meeting_point: locationType === 'private' ? meetingPoint : null,
+        tram_stop: tramString,
+        max_participants: parseInt(maxParticipants),
+        additional_info: tags,
+        initial_start_time: initialStartTimeToSave
+      }).eq('id', id)
+
+      if (error) throw error
+
+      // 2. LOG DANS event_logs (Si changements détectés)
+      if (changes.length > 0) {
+          await supabase.from('event_logs').insert([{
+            event_id: id,
+            modified_by: user.id,
+            change_type: 'UPDATE',
+            details: changes.join('\n') // Stocke tout le détail ligne par ligne
+          }])
+      }
+
+      router.push('/dashboard')
+
+    } catch (error) {
+      alert(error.message)
+    } finally {
+      setLoading(false)
     }
+  }
 
-    if (changesLog.length === 0) { alert("Aucune modification."); setSaving(false); return }
+  const handleCancel = async () => {
+    if (!confirm("Voulez-vous vraiment ANNULER cet événement ?")) return
+    const reason = prompt("Motif de l'annulation (obligatoire) :")
+    if (!reason) return
 
     await supabase.from('events').update({
-        title: formData.title, description: formData.description, tram_stop: formData.tram_stop,
-        start_time: newDateIso, initial_start_time: initialDateToSave
-    }).eq('id', event.id)
-
-    await supabase.from('event_logs').insert([{
-        event_id: event.id, modified_by: user.id, change_type: 'UPDATE', details: changesLog.join('\n')
-    }])
-
-    alert("Modifications enregistrées !")
-    router.push('/dashboard')
-  }
-
-  // --- LOGIQUE D'ANNULATION ---
-  async function confirmCancellation() {
-    if (!cancelReason.trim()) return alert("Merci d'indiquer une raison.")
-    
-    setSaving(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    
-    // 1. Update Event : is_visible = false (caché du public), is_cancelled = true
-    await supabase.from('events').update({ 
-        is_visible: false,
         is_cancelled: true,
-        cancellation_reason: cancelReason,
-        cancelled_at: new Date().toISOString()
-    }).eq('id', event.id)
+        cancelled_at: new Date().toISOString(),
+        cancellation_reason: reason
+    }).eq('id', id)
     
-    // 2. Log Admin
+    // Log l'annulation
     await supabase.from('event_logs').insert([{
-        event_id: event.id,
+        event_id: id,
         modified_by: user.id,
         change_type: 'CANCEL',
-        details: `ANNULATION PAR L'ORGANISATEUR.\nRaison : "${cancelReason}"`
+        details: `Annulation pour motif : ${reason}`
     }])
 
-    setShowCancelModal(false)
     router.push('/dashboard')
   }
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white">Chargement...</div>
+  // Helper pour recherche tram
+  const filteredStops = TRAM_LINES[selectedLine]?.filter(stop => stop.toLowerCase().includes(stopSearch.toLowerCase())) || []
+
+  if (loading) return <div className="min-h-screen flex items-center justify-center dark:bg-slate-950 dark:text-white">Chargement...</div>
 
   return (
-    <main className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20 px-4 pt-8 transition-colors">
-        <div className="max-w-lg mx-auto">
-            <div className="flex items-center gap-4 mb-8">
-                <Link href="/dashboard" className="p-2 bg-white dark:bg-slate-900 rounded-full border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition"><ArrowLeft size={20}/></Link>
-                <h1 className="text-2xl font-black text-slate-900 dark:text-white">Modifier l'événement</h1>
-            </div>
-
-            {/* FORMULAIRE (Désactivé si annulé) */}
-            <form onSubmit={handleUpdate} className={`space-y-6 ${event?.is_cancelled ? 'opacity-50 pointer-events-none' : ''}`}>
-                <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm">
-                    {/* ... (Champs existants identiques à avant) ... */}
-                    <div><label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Titre</label><input type="text" required value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 font-bold focus:ring-2 ring-blue-500 outline-none text-slate-900 dark:text-white"/></div>
-                    <div>
-                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Ligne de Tram</label>
-                        <div className="relative"><select value={formData.tram_stop} onChange={(e) => setFormData({...formData, tram_stop: e.target.value})} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 appearance-none font-medium focus:ring-2 ring-blue-500 outline-none text-slate-900 dark:text-white cursor-pointer">{TRAM_OPTIONS.map(opt => (<option key={opt} value={opt} className="dark:bg-slate-900">{opt}</option>))}</select><ChevronDown className="absolute right-4 top-3.5 text-slate-400 pointer-events-none" size={18}/></div>
-                    </div>
-                    <div><label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Description</label><textarea value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} rows="4" className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 focus:ring-2 ring-blue-500 outline-none text-slate-900 dark:text-white resize-none"/></div>
-                    <div><label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-2">Date & Heure <Clock size={14}/></label><input type="datetime-local" required value={formData.start_time} onChange={(e) => setFormData({...formData, start_time: e.target.value})} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 font-medium focus:ring-2 ring-blue-500 outline-none text-slate-900 dark:text-white"/><div className="bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 p-3 rounded-lg mt-3 text-xs flex items-start gap-2"><AlertTriangle size={14} className="mt-0.5 shrink-0"/> <p>Modifier l'heure affichera une alerte rouge aux invités.</p></div></div>
-                </div>
-
-                <div className="flex flex-col gap-3 pt-4">
-                    <button type="submit" disabled={saving} className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold hover:bg-blue-700 transition flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 disabled:opacity-50">{saving ? '...' : <><Save size={20}/> Enregistrer</>}</button>
-                    <button type="button" onClick={() => setShowCancelModal(true)} className="w-full bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 py-4 rounded-xl font-bold hover:bg-red-100 dark:hover:bg-red-900/20 transition flex items-center justify-center gap-2"><Trash2 size={20}/> Annuler l'événement</button>
-                </div>
-            </form>
-
-            {/* --- MODALE D'ANNULATION --- */}
-            {showCancelModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl shadow-2xl p-6 border border-slate-200 dark:border-slate-800 relative animate-in zoom-in-95">
-                        <div className="flex items-center gap-3 text-red-600 mb-4">
-                            <div className="bg-red-100 p-2 rounded-full"><AlertOctagon size={24}/></div>
-                            <h3 className="font-bold text-lg">Annuler la soirée ?</h3>
-                        </div>
-                        <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">
-                            L'événement sera marqué comme <strong className="text-red-600">Annulé</strong> immédiatement. Les invités verront ce statut.
-                        </p>
-                        
-                        <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Raison de l'annulation (Obligatoire)</label>
-                        <textarea 
-                            autoFocus
-                            placeholder="Ex: Malade, problème de salle, reporté..."
-                            value={cancelReason}
-                            onChange={e => setCancelReason(e.target.value)}
-                            className="w-full bg-slate-100 dark:bg-slate-800 rounded-xl p-3 text-sm focus:ring-2 ring-red-500 outline-none mb-6 text-slate-900 dark:text-white"
-                            rows="3"
-                        />
-
-                        <div className="flex gap-3">
-                            <button onClick={() => setShowCancelModal(false)} className="flex-1 py-3 font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition">Retour</button>
-                            <button onClick={confirmCancellation} className="flex-1 py-3 font-bold bg-red-600 text-white hover:bg-red-700 rounded-xl shadow-lg shadow-red-500/30 transition">Confirmer</button>
-                        </div>
-                    </div>
-                </div>
-            )}
+    <main className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20 pt-4">
+      {/* HEADER SIMPLIFIÉ */}
+      <div className="flex items-center justify-between px-4 mb-6">
+        <div className="flex items-center gap-4">
+            <Link href="/dashboard" className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2 rounded-full text-slate-700 dark:text-slate-200"><ArrowLeft size={20} /></Link>
+            <h1 className="text-2xl font-black text-slate-900 dark:text-white">Modifier</h1>
         </div>
+        {!isCancelled && (
+            <button type="button" onClick={handleCancel} className="text-red-500 font-bold text-xs bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-lg border border-red-100 dark:border-red-900">
+                Annuler l'événement
+            </button>
+        )}
+      </div>
+
+      <form onSubmit={handleUpdate} className="max-w-md mx-auto px-4 space-y-6">
+        
+        {/* TITRE & DESC */}
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 space-y-4">
+            <input type="text" className="w-full bg-transparent font-bold text-lg dark:text-white outline-none" value={title} onChange={e => setTitle(e.target.value)} />
+            <textarea className="w-full bg-transparent outline-none dark:text-white text-sm" value={description} onChange={e => setDescription(e.target.value)} />
+        </div>
+
+        {/* DATE/HEURE */}
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 flex gap-4">
+            <input type="date" className="bg-transparent font-bold dark:text-white outline-none" value={date} onChange={e => setDate(e.target.value)} />
+            <input type="time" className="bg-transparent font-bold dark:text-white outline-none" value={time} onChange={e => setTime(e.target.value)} />
+        </div>
+
+        {/* TRAMWAY & LIEU */}
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 space-y-4">
+             {/* Sélecteur Tram */}
+             <div className="flex gap-2">
+                <select value={selectedLine} onChange={(e) => { setSelectedLine(e.target.value); setSelectedStop(''); setStopSearch('') }} className="w-1/3 bg-slate-50 dark:bg-slate-800 rounded-xl font-bold text-xs text-center dark:text-white">
+                    {Object.keys(TRAM_LINES).map(line => <option key={line} value={line}>{line}</option>)}
+                </select>
+                <div className="flex-1 relative">
+                    <input type="text" placeholder="Arrêt..." className="w-full p-3 bg-slate-50 dark:bg-slate-800 rounded-xl text-sm dark:text-white" value={selectedStop || stopSearch} onChange={(e) => { setStopSearch(e.target.value); setSelectedStop(''); setShowStopSuggestions(true) }} onFocus={() => setShowStopSuggestions(true)} />
+                    {showStopSuggestions && !selectedStop && (
+                        <div className="absolute top-full w-full bg-white dark:bg-slate-900 border z-20 max-h-32 overflow-y-auto">
+                            {filteredStops.map(stop => <div key={stop} onClick={() => { setSelectedStop(stop); setShowStopSuggestions(false) }} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer text-sm dark:text-white">{stop}</div>)}
+                        </div>
+                    )}
+                </div>
+             </div>
+             {/* Nom du lieu */}
+             <input type="text" placeholder="Lieu..." className="w-full p-3 bg-slate-50 dark:bg-slate-800 rounded-xl text-sm dark:text-white" value={locationType === 'public' ? locationName : meetingPoint} onChange={e => locationType === 'public' ? setLocationName(e.target.value) : setMeetingPoint(e.target.value)} />
+        </div>
+
+        {/* FORUM (TAGS) */}
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 space-y-3">
+             <label className="text-xs font-bold text-slate-500 uppercase">Infos Pratiques</label>
+             <div className="flex flex-wrap gap-2">
+                {tags.map((tag, i) => (
+                    <span key={i} className="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs px-2 py-1 rounded border border-blue-100 dark:border-blue-800 flex items-center gap-1">
+                        {tag.label}: {tag.value}
+                        <button type="button" onClick={() => removeTag(i)}><X size={10}/></button>
+                    </span>
+                ))}
+            </div>
+            <div className="flex gap-2">
+                <input type="text" placeholder="Label" className="w-1/3 p-2 bg-slate-50 dark:bg-slate-800 rounded text-xs dark:text-white" value={newTagLabel} onChange={e => setNewTagLabel(e.target.value)} />
+                <input type="text" placeholder="Valeur" className="flex-1 p-2 bg-slate-50 dark:bg-slate-800 rounded text-xs dark:text-white" value={newTagValue} onChange={e => setNewTagValue(e.target.value)} />
+                <button type="button" onClick={addTag} className="bg-slate-200 dark:bg-slate-700 p-2 rounded text-slate-600 dark:text-white"><Plus size={16}/></button>
+            </div>
+        </div>
+
+        {/* JAUGE (Avec affichage du min) */}
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 flex justify-between items-center">
+             <div className="text-sm dark:text-white">
+                <p className="font-bold">Jauge Max</p>
+                <p className="text-xs text-slate-500">Min: {currentParticipantsCount} (inscrits)</p>
+             </div>
+             <input type="number" className="w-16 text-center bg-slate-50 dark:bg-slate-800 rounded-lg p-2 font-bold dark:text-white" value={maxParticipants} onChange={e => setMaxParticipants(parseInt(e.target.value))} />
+        </div>
+
+        <button type="submit" disabled={loading} className="w-full bg-blue-600 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2">
+            <Save size={20} /> Enregistrer
+        </button>
+
+      </form>
     </main>
   )
 }
