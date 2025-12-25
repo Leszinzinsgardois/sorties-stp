@@ -244,7 +244,7 @@ export default function CreateEvent() {
             <div className="flex items-center bg-slate-50 dark:bg-slate-800 rounded-xl px-2">
                 <button type="button" onClick={() => setMaxParticipants(Math.max(1, maxParticipants - 1))} className="p-2 text-slate-400 hover:text-blue-500">-</button>
                 <input 
-                    type="number" min="1" max="500"
+                    type="number" min="1" max="30"
                     className="w-12 bg-transparent text-center font-bold text-slate-900 dark:text-white outline-none"
                     value={maxParticipants} onChange={(e) => setMaxParticipants(parseInt(e.target.value) || 0)}
                 />

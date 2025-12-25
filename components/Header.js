@@ -6,7 +6,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { 
   Rocket, LogIn, Menu, X, Smartphone, 
-  LayoutDashboard, User, LogOut, ShieldAlert, Book, 
+  LayoutDashboard, User, LogOut, ShieldAlert, Book, Building
 } from 'lucide-react'
 
 export default function Header() {
@@ -116,6 +116,9 @@ export default function Header() {
                     <Link href="/dashboard" className={`text-sm font-bold transition ${pathname === '/dashboard' ? 'text-blue-600' : 'text-slate-600 dark:text-slate-300 hover:text-blue-600'}`}>
                         Dashboard
                     </Link>
+                    <Link href="/partners" className={`text-sm font-bold transition ${pathname === '/partners' ? 'text-purple-600' : 'text-slate-600 dark:text-slate-300 hover:text-blue-600'}`}>
+                        Espace Partenaires
+                    </Link>
                     
                     <Link href="/profile" className={`text-sm font-bold transition ${pathname === '/profile' ? 'text-blue-600' : 'text-slate-600 dark:text-slate-300 hover:text-blue-600'}`}>
                         Mon Profil
@@ -166,6 +169,9 @@ export default function Header() {
                     </Link>
                     <Link href="/profile" className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-700 dark:text-slate-300 font-bold">
                         <User size={20} className="text-purple-500" /> Mon Profil
+                    </Link>
+                    <Link href="/partners" className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-700 dark:text-slate-300 font-bold">
+                        <Building size={20} className="text-orange-500" /> Espace Partenaires
                     </Link>
                     {isAdmin && (
                         <Link href="/admin" className="flex items-center gap-3 p-3 rounded-xl bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 font-bold">
