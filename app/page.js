@@ -36,7 +36,7 @@ export default function Home() {
                     </p>
                     
                     <div className="flex flex-col sm:flex-row justify-center lg:justify-start gap-4 animate-in fade-in zoom-in duration-700 delay-300">
-                        <Link href="/login" className="bg-blue-600 text-white px-8 py-4 rounded-xl font-bold shadow-xl shadow-blue-500/30 hover:scale-105 transition-transform flex items-center justify-center gap-2">
+                        <Link href="/dashboard" className="bg-blue-600 text-white px-8 py-4 rounded-xl font-bold shadow-xl shadow-blue-500/30 hover:scale-105 transition-transform flex items-center justify-center gap-2">
                         🚀 Créer une sortie
                         </Link>
                         <a href="#why" className="px-8 py-4 rounded-xl font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center justify-center gap-2">

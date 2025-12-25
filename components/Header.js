@@ -74,7 +74,7 @@ export default function Header() {
       <div className="container mx-auto px-6 h-16 flex items-center justify-between">
         
         {/* LOGO (Oukonsort) */}
-        <Link href={user ? "/dashboard" : "/"} className="flex items-center gap-2 group">
+        <Link href={user ? "/" : "/"} className="flex items-center gap-2 group">
             <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform">
                 <Rocket size={18} className="fill-white/20" />
             </div>
@@ -161,6 +161,7 @@ export default function Header() {
                             <ShieldAlert size={20} /> Interface Admin
                         </Link>
                     )}
+
                     <div className="h-px bg-slate-100 dark:bg-slate-800 my-1"></div>
                     <button onClick={handleSignOut} className="flex items-center gap-3 p-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 font-bold w-full text-left">
                         <LogOut size={20} /> Se déconnecter

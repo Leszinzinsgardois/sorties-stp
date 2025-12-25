@@ -41,7 +41,6 @@ export default function AdminPanel() {
   }
 
   async function fetchPendingReports() {
-    // On récupère les infos d'annulation
     const { data } = await supabase
       .from('reports')
       .select('*, events(title, description, location_name, meeting_point, organizer_id, is_cancelled, cancellation_reason, cancelled_at), profiles(pseudo)')
@@ -151,15 +150,36 @@ export default function AdminPanel() {
       
       {/* GAUCHE */}
       <div className="w-full md:w-1/3 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 h-screen overflow-y-auto flex flex-col">
-        {/* ... (Partie Header Gauche inchangée) ... */}
         <div className="sticky top-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-b border-slate-200 dark:border-slate-800 p-4 z-10 space-y-4">
+            
+            {/* HEADER MODIFIÉ AVEC LE BOUTON UTILISATEURS */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <Link href="/dashboard" className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-500"><ArrowLeft size={18}/></Link>
-                    <h1 className="font-bold text-lg text-slate-800 dark:text-white flex items-center gap-2"><ShieldAlert /> Modération</h1>
+                    <Link href="/dashboard" className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-500">
+                        <ArrowLeft size={18}/>
+                    </Link>
+                    <h1 className="font-bold text-lg text-slate-800 dark:text-white flex items-center gap-2">
+                        <ShieldAlert /> Modération
+                    </h1>
                 </div>
-                <Link href="/admin/verification" className="p-2 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-900/40 transition"><IdCard size={20} /></Link>
+                
+                <div className="flex gap-2">
+                    {/* BOUTON UTILISATEURS (Nouveau) */}
+                    <Link 
+                        href="/admin/users" 
+                        className="p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 transition" 
+                        title="Gérer les utilisateurs"
+                    >
+                        <Users size={20} />
+                    </Link>
+
+                    {/* BOUTON CNI (Existant) */}
+                    <Link href="/admin/verification" className="p-2 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-900/40 transition">
+                        <IdCard size={20} />
+                    </Link>
+                </div>
             </div>
+
             <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
                 <button onClick={() => setActiveTab('reports')} className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-bold rounded-lg transition ${activeTab === 'reports' ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}><AlertTriangle size={16}/> Inbox ({reports.length})</button>
                 <button onClick={() => setActiveTab('database')} className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-bold rounded-lg transition ${activeTab === 'database' ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}><Database size={16}/> Base de données</button>
@@ -297,18 +317,31 @@ export default function AdminPanel() {
                             </div>
                         </div>
 
-                        {/* 4. HISTORIQUE */}
+                        {/* 4. HISTORIQUE MODIFIÉ AVEC POP-UP */}
                         {details.logsHistory.length > 0 && (
                             <div className="bg-slate-100 dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 mt-6">
-                                <h3 className="text-sm font-bold text-slate-500 uppercase mb-4 flex items-center gap-2"><FileText size={16}/> Historique des modifications</h3>
+                                <h3 className="text-sm font-bold text-slate-500 uppercase mb-4 flex items-center gap-2">
+                                    <FileText size={16}/> Historique des modifications
+                                </h3>
                                 <div className="space-y-3">
                                     {details.logsHistory.map(log => (
                                         <div key={log.id} className="text-sm bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700 flex justify-between items-center">
                                             <div>
-                                                <div className="flex items-center gap-2 mb-1"><span className={`font-bold text-[10px] px-2 py-0.5 rounded uppercase ${log.change_type === 'CANCEL' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`}>{log.change_type === 'CANCEL' ? 'ANNULATION' : 'MODIFICATION'}</span><span className="text-slate-400 text-xs">{new Date(log.created_at).toLocaleString()}</span></div>
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className={`font-bold text-[10px] px-2 py-0.5 rounded uppercase ${log.change_type === 'CANCEL' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`}>
+                                                        {log.change_type === 'CANCEL' ? 'ANNULATION' : 'MODIFICATION'}
+                                                    </span>
+                                                    <span className="text-slate-400 text-xs">{new Date(log.created_at).toLocaleString()}</span>
+                                                </div>
                                                 <p className="text-slate-700 dark:text-slate-300 font-medium line-clamp-1 opacity-80">{log.details}</p>
                                             </div>
-                                            <button onClick={() => setSelectedLog(log)} className="p-2 bg-slate-100 dark:bg-slate-700 text-slate-500 hover:text-blue-600 rounded-lg hover:bg-blue-50 dark:hover:bg-slate-600 transition"><Eye size={18} /></button>
+                                            <button 
+                                                onClick={() => setSelectedLog(log)}
+                                                className="p-2 bg-slate-100 dark:bg-slate-700 text-slate-500 hover:text-blue-600 rounded-lg hover:bg-blue-50 dark:hover:bg-slate-600 transition"
+                                                title="Voir détail"
+                                            >
+                                                <Eye size={18} />
+                                            </button>
                                         </div>
                                     ))}
                                 </div>
@@ -319,14 +352,16 @@ export default function AdminPanel() {
             </div>
         ) : <div className="h-full flex flex-col items-center justify-center text-slate-400 opacity-50"><ShieldAlert size={64} className="mb-4" /><p className="text-lg font-medium">Sélectionnez un élément</p><p className="text-sm">Inbox pour les urgences, Base de données pour l'historique.</p></div>}
 
-        {/* MODALE LOG */}
+        {/* --- MODALE POP-UP --- */}
         {selectedLog && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
                 <div className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl shadow-2xl p-6 border border-slate-200 dark:border-slate-800 relative animate-in zoom-in-95 duration-200">
                     <button onClick={() => setSelectedLog(null)} className="absolute top-4 right-4 p-2 bg-slate-100 dark:bg-slate-800 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition"><X size={20} /></button>
                     <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">Détail de la modification</h3>
                     <p className="text-xs text-slate-400 mb-6 font-mono">ID: {selectedLog.id} • {new Date(selectedLog.created_at).toLocaleString()}</p>
-                    <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-100 dark:border-slate-800 max-h-[60vh] overflow-y-auto"><pre className="whitespace-pre-wrap font-sans text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{selectedLog.details}</pre></div>
+                    <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-100 dark:border-slate-800 max-h-[60vh] overflow-y-auto">
+                        <pre className="whitespace-pre-wrap font-sans text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{selectedLog.details}</pre>
+                    </div>
                     <div className="mt-6 flex justify-end"><button onClick={() => setSelectedLog(null)} className="px-6 py-2 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition">Fermer</button></div>
                 </div>
             </div>
