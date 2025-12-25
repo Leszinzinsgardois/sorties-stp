@@ -6,7 +6,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { 
   Rocket, LogIn, Menu, X, Smartphone, 
-  LayoutDashboard, User, LogOut, ShieldAlert 
+  LayoutDashboard, User, LogOut, ShieldAlert, Book, 
 } from 'lucide-react'
 
 export default function Header() {
@@ -94,6 +94,14 @@ export default function Header() {
                 <Smartphone size={18} /> L'App
             </Link>
 
+            {/* Lien Guide d'utilisation */}
+            <Link 
+                href="/guide" 
+                className="flex items-center gap-2 text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition"
+            >
+                <Book size={18} /> Guide
+            </Link>
+
             <div className="w-px h-6 bg-slate-200 dark:bg-slate-800"></div>
 
             {user ? (
@@ -146,6 +154,9 @@ export default function Header() {
         <div className="md:hidden absolute top-16 left-0 w-full bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 shadow-xl p-4 flex flex-col gap-4 animate-in slide-in-from-top-2">
              <Link href="/install" className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-700 dark:text-slate-300 font-bold">
                 <Smartphone size={20} className="text-blue-500" /> Installer l'App
+            </Link>
+            <Link href="/guide" className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-700 dark:text-slate-300 font-bold">
+                <Smartphone size={20} className="text-blue-500" /> Guide
             </Link>
 
             {user ? (
