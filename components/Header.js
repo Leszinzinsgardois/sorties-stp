@@ -156,7 +156,7 @@ export default function Header() {
                 <Smartphone size={20} className="text-blue-500" /> Installer l'App
             </Link>
             <Link href="/guide" className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-700 dark:text-slate-300 font-bold">
-                <Smartphone size={20} className="text-blue-500" /> Guide
+                <Book size={20} className="text-blue-500" /> Guide
             </Link>
 
             {user ? (
