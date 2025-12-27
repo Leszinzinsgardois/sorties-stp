@@ -1,3 +1,10 @@
+## A DEPLOYER AU PLUS VITE 
+
+- Notifiations sociales. Quand un évènement est partagé, il est dynamiquement affiché dans la visualisation sur les réseaux sociaux. 
+- La photo des réseaux sociaux à déjà été enregistrée sur la repository mais elle est à mettre aussi sur le site lors du prochain déploiement. (dans quelques temps. Sauf SI REEL besoin)
+
+
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
 ## Getting Started
