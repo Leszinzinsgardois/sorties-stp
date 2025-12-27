@@ -1,5 +1,6 @@
 import './globals.css'
 import { Inter } from 'next/font/google'
+import { GoogleAnalytics } from '@next/third-parties/google' // <--- 1. IMPORT ICI
 import Header from '@/components/Header' 
 
 const inter = Inter({ subsets: ['latin'] })
@@ -31,6 +32,9 @@ export default function RootLayout({ children }) {
             {children}
         </div>
       </body>
+      {/* 2. LE TRACKER EST JUSTE ICI 👇 */}
+      {/* Remplace 'G-XXXXXXXXXX' par ton vrai code copié à l'étape 1 */}
+      <GoogleAnalytics gaId="G-RLL11RVSQK" />
     </html>
   )
 }
