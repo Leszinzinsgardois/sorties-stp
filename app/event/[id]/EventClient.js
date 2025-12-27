@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { Calendar, MapPin, TramFront, Users, AlertTriangle, Copy, ArrowLeft, Info, AlertOctagon, Clock, CloudRain, Sun, Zap, Umbrella, ArrowRight } from 'lucide-react'
+import { Calendar, MapPin, TramFront, Users, AlertTriangle, Copy, ArrowLeft, Info, AlertOctagon, Clock, CloudRain, Sun, Zap, Umbrella, ArrowRight, Printer, FileText } from 'lucide-react'
 
 // Mapping Codes WMO Météo -> Alertes
 const getWeatherAlert = (code) => {
@@ -20,11 +20,14 @@ export default function EventClient() {
   const [event, setEvent] = useState(null)
   const [loading, setLoading] = useState(true)
   const [participantCount, setParticipantCount] = useState(0)
+  
+  // NOUVEAU : Liste complète pour l'organisateur
+  const [participantsList, setParticipantsList] = useState([]) 
+  const [isOrganizer, setIsOrganizer] = useState(false)
+
   const [pseudo, setPseudo] = useState('')
   const [hasJoined, setHasJoined] = useState(false)
   const [joinLoading, setJoinLoading] = useState(false)
-  
-  // METEO
   const [weatherAlert, setWeatherAlert] = useState(null)
 
   useEffect(() => {
@@ -34,20 +37,35 @@ export default function EventClient() {
   }, [])
 
   async function fetchEvent() {
+    // 1. Récupérer l'utilisateur courant pour vérifier si c'est l'organisateur
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    // 2. Récupérer l'event
     const { data: eventData, error } = await supabase.from('events').select('*, profiles(pseudo)').eq('id', id).single()
     if (error) { setLoading(false); return }
     setEvent(eventData)
 
-    const { count } = await supabase.from('participants').select('*', { count: 'exact', head: true }).eq('event_id', id)
-    setParticipantCount(count || 0)
+    // Vérif si organisateur
+    const isOrg = user && user.id === eventData.organizer_id
+    setIsOrganizer(isOrg)
+
+    // 3. Récupérer les participants
+    if (isOrg) {
+        // Si Organisateur : On récupère TOUTE la liste (Noms)
+        const { data } = await supabase.from('participants').select('guest_name, user_id, joined_at').eq('event_id', id).order('joined_at', { ascending: true })
+        setParticipantsList(data || [])
+        setParticipantCount(data?.length || 0)
+    } else {
+        // Si Invité : On récupère juste le COMPTEUR (Confidentialité)
+        const { count } = await supabase.from('participants').select('*', { count: 'exact', head: true }).eq('event_id', id)
+        setParticipantCount(count || 0)
+    }
     
-    // FETCH METEO SI DATE PROCHE (< 5 jours)
     if (eventData?.start_time) checkWeather(eventData.start_time)
-    
     setLoading(false)
   }
 
-  // APPEL API OPEN METEO
+  // --- (Fonctions météo et join inchangées) ---
   async function checkWeather(dateStr) {
       const eventDate = new Date(dateStr)
       const today = new Date()
@@ -93,6 +111,11 @@ export default function EventClient() {
 
   const copyLink = () => { navigator.clipboard.writeText(window.location.href); alert("Lien copié ! 🔗") }
 
+  // Fonction d'impression
+  const printList = () => {
+    window.print()
+  }
+
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 text-slate-500">Chargement...</div>
   if (!event) return <div className="p-10 text-center text-red-500">Soirée introuvable.</div>
 
@@ -102,7 +125,8 @@ export default function EventClient() {
   const encodedAddress = encodeURIComponent(addressQuery + ' Montpellier')
 
   return (
-    <main className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-24 transition-colors">
+    <>
+    <main className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-24 transition-colors print:hidden">
       
       {/* HEADER FIXE */}
       <div className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 pt-safe-top">
@@ -119,13 +143,12 @@ export default function EventClient() {
          </div>
       </div>
 
-      {/* CONTENEUR RESPONSIVE (Colonne Mobile / Grille PC) */}
       <div className="max-w-5xl mx-auto px-4 pt-6 grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
 
-        {/* --- COLONNE GAUCHE (Infos Clés) --- */}
+        {/* --- COLONNE GAUCHE (Infos) --- */}
         <div className="space-y-6">
-
-            {/* 1. ALERTE ANNULATION (Priorité Max) */}
+            
+            {/* 1. ALERTE ANNULATION */}
             {event.is_cancelled && (
                 <div className="bg-red-600 text-white p-6 rounded-3xl shadow-xl shadow-red-600/20 border-4 border-white dark:border-slate-900 animate-in fade-in slide-in-from-top-4">
                     <div className="flex items-start gap-4">
@@ -149,13 +172,11 @@ export default function EventClient() {
                     <div>
                         <h3 className="font-black uppercase tracking-wide text-sm">{weatherAlert.label}</h3>
                         <p className="text-xs font-medium opacity-90 mt-1">{weatherAlert.message}</p>
-                        {/* Masqué sur mobile pour gagner de la place */}
-                        <p className="text-[10px] mt-2 opacity-70 uppercase hidden md:block">Source : Météo-France via OpenMeteo</p>
                     </div>
                 </div>
             )}
 
-            {/* 3. ALERTE HORAIRE MODIFIÉ (Le retour !) */}
+            {/* 3. ALERTE HORAIRE MODIFIÉ (Restaurée) */}
             {!event.is_cancelled && event.initial_start_time && (
                 <div className="bg-orange-50 dark:bg-orange-900/20 border-l-4 border-orange-500 p-4 rounded-r-xl shadow-sm animate-pulse">
                     <div className="flex items-start gap-3">
@@ -172,11 +193,9 @@ export default function EventClient() {
                     </div>
                 </div>
             )}
-            
-            {/* CARTE PRINCIPALE (Info Card) */}
+
+            {/* CARTE INFO */}
             <div className={`bg-white dark:bg-slate-900 rounded-3xl shadow-sm p-6 space-y-6 border border-slate-100 dark:border-slate-800 ${event.is_cancelled || isFinished ? 'opacity-70 grayscale-[0.5]' : ''}`}>
-                
-                {/* Organisateur & Statut */}
                 <div className="flex justify-between items-center">
                     <span className="text-xs font-bold bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-full">@{event.profiles?.pseudo || 'Anonyme'}</span>
                     {event.is_cancelled ? <span className="bg-red-600 text-white text-xs px-2 py-1 rounded-md font-bold">ANNULÉ</span> : 
@@ -184,7 +203,6 @@ export default function EventClient() {
                      isFull && <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-md font-bold">COMPLET</span>}
                 </div>
 
-                {/* Date */}
                 <div className="flex items-center gap-4">
                     <div className="bg-blue-50 dark:bg-slate-800 w-12 h-12 rounded-2xl flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0"><Calendar size={24} /></div>
                     <div>
@@ -193,7 +211,6 @@ export default function EventClient() {
                     </div>
                 </div>
 
-                {/* Lieu & Tram */}
                 <div className="flex items-center gap-4">
                     <div className="bg-purple-50 dark:bg-slate-800 w-12 h-12 rounded-2xl flex items-center justify-center text-purple-600 dark:text-purple-400 shrink-0"><MapPin size={24} /></div>
                     <div className="min-w-0 flex-1">
@@ -205,33 +222,12 @@ export default function EventClient() {
                         </div>
                     </div>
                 </div>
-
-                {/* Boutons GPS (Masqués sur PC pour alléger, visibles sur Mobile) */}
-                <div className="grid grid-cols-2 gap-3 pt-2 md:hidden">
-                    <a href={`https://www.google.com/maps/search/?api=1&query=${encodedAddress}`} target="_blank" className="flex items-center justify-center gap-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 py-3 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 transition">Google Maps</a>
-                    <a href={`http://maps.apple.com/?q=${encodedAddress}`} target="_blank" className="flex items-center justify-center gap-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 py-3 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 transition">Plans</a>
-                </div>
             </div>
         </div>
 
-        {/* --- COLONNE DROITE (Détails & Inscriptions) --- */}
+        {/* --- COLONNE DROITE --- */}
         <div className="space-y-6">
             
-            {/* INFOS PRATIQUES (Forum) */}
-            {event.additional_info && event.additional_info.length > 0 && (
-                <div className="bg-blue-50 dark:bg-blue-900/10 rounded-3xl p-6 border border-blue-100 dark:border-blue-900/30">
-                    <h3 className="font-bold text-blue-800 dark:text-blue-300 flex items-center gap-2 mb-4"><Info size={20}/> Infos Pratiques</h3>
-                    <div className="grid grid-cols-2 gap-3">
-                        {event.additional_info.map((tag, i) => (
-                            <div key={i} className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-blue-100 dark:border-blue-800/50 shadow-sm">
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{tag.label}</p>
-                                <p className="font-bold text-slate-800 dark:text-white text-sm truncate">{tag.value}</p>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
-
             {/* DESCRIPTION */}
             <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm p-6 border border-slate-100 dark:border-slate-800">
                 <h3 className="font-bold text-slate-800 dark:text-white mb-3">À propos</h3>
@@ -240,7 +236,7 @@ export default function EventClient() {
                 </div>
             </div>
 
-            {/* PARTICIPANTS & INSCRIPTION */}
+            {/* PARTICIPANTS */}
             <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm p-6 border border-slate-100 dark:border-slate-800">
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="font-bold text-slate-800 dark:text-white flex items-center gap-2"><Users size={20} className="text-blue-600 dark:text-blue-400"/> Participants</h3>
@@ -250,20 +246,40 @@ export default function EventClient() {
                     <div className={`h-full transition-all duration-500 ${isFull ? 'bg-red-500' : 'bg-gradient-to-r from-blue-500 to-indigo-500'}`} style={{ width: `${Math.min((participantCount / event.max_participants) * 100, 100)}%` }}></div>
                 </div>
                 
-                {/* Actions d'inscription */}
-                {event.is_cancelled ? (
-                    <div className="text-center bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 p-4 rounded-xl font-bold">🚫 Annulé</div>
-                ) : isFinished ? (
-                    <div className="text-center bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 p-4 rounded-xl font-bold flex items-center justify-center gap-2"><Clock size={18} /> C'est fini !</div>
-                ) : !hasJoined && !isFull ? (
-                    <div className="flex gap-2">
-                        <input type="text" placeholder="Ton Prénom..." className="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 outline-none min-w-0" value={pseudo} onChange={(e) => setPseudo(e.target.value)} />
-                        <button onClick={handleJoin} disabled={!pseudo || joinLoading} className="bg-blue-600 text-white font-bold px-4 py-3 rounded-xl hover:bg-blue-700 disabled:opacity-50">Je viens !</button>
+                {/* Actions d'inscription (Invité) */}
+                {!isOrganizer && (
+                    event.is_cancelled ? (
+                        <div className="text-center bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 p-4 rounded-xl font-bold">🚫 Annulé</div>
+                    ) : isFinished ? (
+                        <div className="text-center bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 p-4 rounded-xl font-bold flex items-center justify-center gap-2"><Clock size={18} /> C'est fini !</div>
+                    ) : !hasJoined && !isFull ? (
+                        <div className="flex gap-2">
+                            <input type="text" placeholder="Ton Prénom..." className="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 outline-none min-w-0" value={pseudo} onChange={(e) => setPseudo(e.target.value)} />
+                            <button onClick={handleJoin} disabled={!pseudo || joinLoading} className="bg-blue-600 text-white font-bold px-4 py-3 rounded-xl hover:bg-blue-700 disabled:opacity-50">Je viens !</button>
+                        </div>
+                    ) : hasJoined ? (
+                        <div className="text-center bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 p-4 rounded-xl font-bold">✅ Inscrit !</div>
+                    ) : (
+                        <div className="text-center bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-4 rounded-xl font-bold">⛔️ Complet !</div>
+                    )
+                )}
+
+                {/* ZONE ORGANISATEUR (Liste + Impression) */}
+                {isOrganizer && participantsList.length > 0 && (
+                    <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800">
+                        <h4 className="text-xs font-bold text-slate-500 uppercase mb-3">Liste des invités (Admin)</h4>
+                        <div className="max-h-60 overflow-y-auto space-y-2 mb-4 bg-slate-50 dark:bg-slate-950 p-2 rounded-xl">
+                            {participantsList.map((p, i) => (
+                                <div key={i} className="flex justify-between items-center text-sm p-2 bg-white dark:bg-slate-900 rounded-lg shadow-sm">
+                                    <span className="font-bold text-slate-800 dark:text-white">{p.guest_name}</span>
+                                    <span className="text-xs text-slate-400">{new Date(p.joined_at).toLocaleDateString()}</span>
+                                </div>
+                            ))}
+                        </div>
+                        <button onClick={printList} className="w-full flex items-center justify-center gap-2 bg-slate-800 dark:bg-white text-white dark:text-slate-900 font-bold py-3 rounded-xl hover:opacity-90 transition">
+                            <Printer size={18} /> Télécharger la liste (PDF)
+                        </button>
                     </div>
-                ) : hasJoined ? (
-                    <div className="text-center bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 p-4 rounded-xl font-bold">✅ Inscrit !</div>
-                ) : (
-                    <div className="text-center bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-4 rounded-xl font-bold">⛔️ Complet !</div>
                 )}
             </div>
 
@@ -275,5 +291,43 @@ export default function EventClient() {
         <button onClick={copyLink} className="flex items-center gap-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-8 py-3 rounded-full font-bold shadow-lg active:scale-95 transition hover:scale-105"><Copy size={18} /> Partager</button>
       </div>
     </main>
+
+    {/* --- MODE IMPRESSION (Invisible à l'écran, visible sur PDF) --- */}
+    <div className="hidden print:block p-8 bg-white text-black">
+        <div className="text-center mb-8 border-b-2 border-black pb-4">
+            <h1 className="text-4xl font-black mb-2">{event.title}</h1>
+            <p className="text-lg">Organisé par {event.profiles?.pseudo}</p>
+            <p className="text-sm mt-2">{new Date(event.start_time).toLocaleString()}</p>
+            <p className="text-sm">{event.location_name} - {event.location_type === 'public' ? 'Public' : 'Privé'}</p>
+        </div>
+
+        <h2 className="text-2xl font-bold mb-4 uppercase border-b border-gray-300 pb-2">Liste des Participants ({participantCount})</h2>
+        
+        <table className="w-full text-left border-collapse">
+            <thead>
+                <tr className="border-b-2 border-black">
+                    <th className="py-2">#</th>
+                    <th className="py-2">Nom / Pseudo</th>
+                    <th className="py-2">Date inscription</th>
+                    <th className="py-2 text-right">Émargement</th>
+                </tr>
+            </thead>
+            <tbody>
+                {participantsList.map((p, i) => (
+                    <tr key={i} className="border-b border-gray-200">
+                        <td className="py-3 font-mono text-gray-500">{i + 1}</td>
+                        <td className="py-3 font-bold">{p.guest_name}</td>
+                        <td className="py-3 text-sm">{new Date(p.joined_at).toLocaleString()}</td>
+                        <td className="py-3 text-right"><div className="w-6 h-6 border-2 border-black inline-block rounded"></div></td>
+                    </tr>
+                ))}
+            </tbody>
+        </table>
+
+        <div className="mt-12 text-center text-sm text-gray-500 italic">
+            Généré automatiquement par Oukonsort - oukonsort.netlify.app
+        </div>
+    </div>
+    </>
   )
 }
