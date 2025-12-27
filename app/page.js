@@ -1,10 +1,19 @@
+'use client'
+
+import { Suspense } from 'react'
 import Link from 'next/link'
 import { Rocket, ShieldCheck, Zap, Heart, Code, ArrowRight, MapPin, Users, HelpCircle, CheckCircle, Smartphone, Share2, PartyPopper, MessageCircle } from 'lucide-react'
+import WelcomePopup from '@/components/WelcomePopup'
 
 export default function Home() {
   return (
     <main className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors selection:bg-blue-500 selection:text-white overflow-x-hidden">
       
+      {/* POPUP DE BIENVENUE (Caché par défaut, géré par le composant) */}
+      <Suspense fallback={null}>
+        <WelcomePopup />
+      </Suspense>
+
       {/* 1. HERO SECTION */}
       <section className="relative pt-12 pb-20 lg:pt-32 lg:pb-32 overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-purple-500/20 rounded-full blur-[100px] -z-10 animate-pulse"></div>
@@ -196,7 +205,7 @@ export default function Home() {
             <Smartphone size={14}/> Installer l'app
         </Link>
         <p className="text-xs text-slate-400">
-            © 2024 Oukonsort. Fait avec ❤️ à Montpellier.
+            © 2025 Oukonsort. Fait avec ❤️ à Montpellier.
         </p>
       </footer>
     </main>
