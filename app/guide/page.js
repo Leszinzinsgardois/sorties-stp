@@ -6,7 +6,8 @@ import {
   Zap, Users, ArrowRight, CheckCircle, 
   Smartphone, HelpCircle, CloudRain, 
   TramFront, Lock, Eye, AlertTriangle, 
-  Calendar, Info 
+  Calendar, Info, QrCode, Download,
+  ShieldAlert, Siren, Bot, Sparkles, Wand2
 } from 'lucide-react'
 
 export default function Guide() {
@@ -34,7 +35,7 @@ export default function Guide() {
         </div>
       </section>
 
-      {/* 2. LE TUTO RAPIDE (Style V1 Restauré & Amélioré) */}
+      {/* 2. LE TUTO RAPIDE */}
       <section className="py-20 bg-white dark:bg-slate-900 border-y border-slate-200 dark:border-slate-800">
           <div className="container mx-auto px-6 max-w-6xl">
               <div className="text-center mb-16">
@@ -85,7 +86,7 @@ export default function Guide() {
           </div>
       </section>
 
-      {/* 3. LE GIGA DICTIONNAIRE (Features en détail) */}
+      {/* 3. L'ENCYCLOPÉDIE (Features en détail) */}
       <section className="py-24 bg-slate-50 dark:bg-slate-950">
           <div className="container mx-auto px-6 max-w-6xl">
               
@@ -93,7 +94,7 @@ export default function Guide() {
                 <div>
                     <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-4">L'Encyclopédie des Fonctionnalités</h2>
                     <p className="text-slate-600 dark:text-slate-400 max-w-xl">
-                        Oukonsort est bourré de petits outils intelligents pour te simplifier la vie. Voici comment ils fonctionnent en détail.
+                        Oukonsort est bourré de petits outils intelligents. Voici comment tout fonctionne.
                     </p>
                 </div>
               </div>
@@ -101,55 +102,123 @@ export default function Guide() {
               {/* GRID TYPE "BENTO" */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   
-                  {/* CARD: METEO */}
-                  <div className="md:col-span-2 bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 hover:border-blue-500/30 transition shadow-sm group">
-                      <div className="flex items-start justify-between mb-6">
-                          <div className="bg-orange-100 dark:bg-orange-900/20 p-3 rounded-xl text-orange-600 dark:text-orange-400">
-                              <CloudRain size={32}/>
-                          </div>
-                          <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold px-3 py-1 rounded-full uppercase">Automatique</span>
+                  {/* --- LIGNE 1 : ZÉRO FRICTION + PARTAGE --- */}
+
+                  {/* CARD: ZÉRO FRICTION (2 cols) */}
+                  <div className="md:col-span-2 bg-gradient-to-br from-blue-600 to-blue-700 p-8 rounded-3xl shadow-lg text-white relative overflow-hidden group">
+                      <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+                          <Rocket size={150}/>
                       </div>
-                      <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Vigilance Météo Intelligente</h3>
-                      <p className="text-slate-600 dark:text-slate-400 mb-4">
-                          Ne te laisse pas surprendre par la pluie. Oukonsort scanne les prévisions Météo-France pour ton événement (jusqu'à 5 jours avant).
-                      </p>
-                      <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-100 dark:border-slate-800 text-sm text-slate-500">
-                          <p>⚡️ <strong>Orage/Pluie ?</strong> Une bannière d'alerte s'affiche automatiquement en haut de ta soirée.</p>
-                          <p>☀️ <strong>Grand soleil ?</strong> Rien ne s'affiche, profite.</p>
+                      <div className="relative z-10">
+                          <div className="bg-white/20 p-3 rounded-xl w-fit mb-6 backdrop-blur-md">
+                              <Zap size={28} className="text-white"/>
+                          </div>
+                          <h3 className="text-2xl font-bold mb-2">Zéro friction pour tes potes</h3>
+                          <p className="text-blue-100 mb-6 max-w-lg">
+                              C'est la force d'Oukonsort. Quand tu partages le lien sur WhatsApp ou Insta :
+                          </p>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                              <div className="flex items-center gap-3 bg-white/10 p-3 rounded-lg backdrop-blur-sm">
+                                  <CheckCircle size={20} className="text-green-300"/>
+                                  <span className="font-bold text-sm">Pas d'application à télécharger</span>
+                              </div>
+                              <div className="flex items-center gap-3 bg-white/10 p-3 rounded-lg backdrop-blur-sm">
+                                  <CheckCircle size={20} className="text-green-300"/>
+                                  <span className="font-bold text-sm">Pas de compte obligatoire</span>
+                              </div>
+                              <div className="flex items-center gap-3 bg-white/10 p-3 rounded-lg backdrop-blur-sm">
+                                  <CheckCircle size={20} className="text-green-300"/>
+                                  <span className="font-bold text-sm">Infos visibles en 1 clic</span>
+                              </div>
+                                <div className="flex items-center gap-3 bg-white/5 p-3 rounded-lg backdrop-blur-sm border border-white/10 border-dashed">
+                                    <Calendar size={20} className="text-blue-200"/>
+                                    <span className="font-bold text-sm text-blue-100">Ajout Calendrier <span className="text-xs opacity-70 font-normal ml-1">(À venir)</span></span>
+                                </div>
+                          </div>
                       </div>
                   </div>
 
-                  {/* CARD: TRAMWAY */}
+                  {/* CARD: PARTAGE & QR (1 col) */}
+                  <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 hover:border-pink-500/30 transition shadow-sm group">
+                      <div className="bg-pink-100 dark:bg-pink-900/20 p-3 rounded-xl text-pink-600 dark:text-pink-400 w-fit mb-6">
+                          <Share2 size={32}/>
+                      </div>
+                      <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Partage Viral</h3>
+                      <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">
+                          Le lien généré est magique.
+                      </p>
+                      <ul className="text-sm text-slate-500 space-y-2 mb-4">
+                          <li>• Copie le lien en 1 clic.</li>
+                          <li>• Partage-le en Story Insta.</li>
+                          <li>• Colle-le dans tes groupes de promo.</li>
+                      </ul>
+                      <div className="mt-auto pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2 text-xs font-bold text-slate-400 uppercase">
+                          <QrCode size={14}/> QR Code intégré (bientôt)
+                      </div>
+                  </div>
+
+                  {/* --- LIGNE 2 : FONCTIONNALITÉS --- */}
+
+                  {/* CARD: METEO (1 col) */}
+                    <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 hover:border-blue-500/30 transition shadow-sm group">
+                        
+                        {/* En-tête avec Icône + Badge AUTO */}
+                        <div className="flex items-start justify-between mb-6">
+                            <div className="bg-orange-100 dark:bg-orange-900/20 p-3 rounded-xl text-orange-600 dark:text-orange-400">
+                                <CloudRain size={32}/>
+                            </div>
+                            <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold px-3 py-1 rounded-full uppercase">Auto</span>
+                        </div>
+
+                        <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Météo Auto</h3>
+                        <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">
+                            Fini de checker la météo toutes les 5 minutes, Oukonsort scanne Météo-France pour toi.
+                        </p>
+                        
+                        {/* Blocs d'infos (J'ai ajouté un petit space-y-2 pour qu'ils ne se collent pas) */}
+                        <div className="space-y-2">
+                            <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-100 dark:border-slate-800 text-xs text-slate-500">
+                                <p>⚡️ <strong>Orage/Pluie ?</strong> Une bannière d'alerte s'affiche automatiquement.</p>
+                            </div>
+                            <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-100 dark:border-slate-800 text-xs text-slate-500">
+                                <p>☀️ <strong>Grand Soleil ?</strong> Aucune information n'apparaît à l'écran.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                  {/* CARD: TRAMWAY (1 col) */}
                   <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 hover:border-purple-500/30 transition shadow-sm">
                       <div className="bg-purple-100 dark:bg-purple-900/20 p-3 rounded-xl text-purple-600 dark:text-purple-400 w-fit mb-6">
                           <TramFront size={32}/>
                       </div>
                       <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Sélecteur Tram 2.0</h3>
                       <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">
-                          Plus besoin d'expliquer "C'est l'arrêt après la gare".
+                          Fini les "C'est quel arrêt ?".
                       </p>
-                      <p className="text-sm text-slate-500 border-t border-slate-100 dark:border-slate-800 pt-4">
-                          Sélectionne ta ligne (1 à 4) et choisis l'arrêt précis dans la liste officielle. Il apparaîtra clairement sur la fiche de l'événement.
+                      <p className="text-sm text-slate-500">
+                          Choisis la ligne et l'arrêt précis. Il apparaît clairement sur la fiche de l'événement. Tu as toujours la possibilité de changer l'arrêt si tu t'es trompé.
                       </p>
                   </div>
 
-                  {/* CARD: JAUGE */}
+                  {/* CARD: JAUGE (1 col) */}
                   <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 hover:border-green-500/30 transition shadow-sm">
                       <div className="bg-green-100 dark:bg-green-900/20 p-3 rounded-xl text-green-600 dark:text-green-400 w-fit mb-6">
                           <Users size={32}/>
                       </div>
-                      <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Jauge & Liste d'Attente</h3>
+                      <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Jauge Max</h3>
                       <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">
                           Contrôle qui vient.
                       </p>
                       <ul className="text-sm text-slate-500 space-y-2">
                           <li>• Tu fixes un max (ex: 20).</li>
-                          <li>• La barre de progression se remplit.</li>
-                          <li>• À 20/20, le bouton "Je viens" disparaît et affiche <strong>COMPLET</strong>.</li>
+                          <li>• Barre de progression.</li>
+                          <li>• Blocage auto quand complet.</li>
                       </ul>
                   </div>
 
-                  {/* CARD: MODIFICATION */}
+                  {/* --- LIGNE 3 : GESTION & INFOS --- */}
+
+                  {/* CARD: MODIFICATION (2 cols) */}
                   <div className="md:col-span-2 bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 hover:border-blue-500/30 transition shadow-sm">
                        <div className="flex items-start justify-between mb-6">
                           <div className="bg-blue-100 dark:bg-blue-900/20 p-3 rounded-xl text-blue-600 dark:text-blue-400">
@@ -163,16 +232,16 @@ export default function Guide() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div className="bg-orange-50 dark:bg-orange-900/10 p-3 rounded-lg border border-orange-100 dark:border-orange-900/20">
                               <p className="font-bold text-orange-700 dark:text-orange-400 text-sm mb-1">Changement d'heure</p>
-                              <p className="text-xs text-slate-500">Une alerte "Horaire Modifié" apparaît avec l'ancien et le nouvel horaire (ex: 20h → 21h).</p>
+                              <p className="text-xs text-slate-500">Une alerte "Horaire Modifié" apparaît avec l'ancien et le nouvel horaire.</p>
                           </div>
                           <div className="bg-red-50 dark:bg-red-900/10 p-3 rounded-lg border border-red-100 dark:border-red-900/20">
                               <p className="font-bold text-red-700 dark:text-red-400 text-sm mb-1">Annulation</p>
-                              <p className="text-xs text-slate-500">L'événement se fige, passe en rouge et affiche ton motif d'annulation bien en vue.</p>
+                              <p className="text-xs text-slate-500">L'événement se fige, passe en rouge et affiche ton motif d'annulation.</p>
                           </div>
                       </div>
                   </div>
 
-                  {/* CARD: FORUM */}
+                  {/* CARD: FORUM (1 col) */}
                   <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 hover:border-indigo-500/30 transition shadow-sm">
                       <div className="bg-indigo-100 dark:bg-indigo-900/20 p-3 rounded-xl text-indigo-600 dark:text-indigo-400 w-fit mb-6">
                           <Info size={32}/>
@@ -182,34 +251,117 @@ export default function Guide() {
                           Ajoute des tags spécifiques.
                       </p>
                       <p className="text-sm text-slate-500">
-                          Dress-code, PAF (Participation aux frais), ou "Ramenez vos boissons". Ces infos s'affichent dans un cadre dédié "Infos Pratiques".
+                          Dress-code, PAF, ou "Ramenez vos boissons". Ces infos s'affichent dans un cadre dédié.
                       </p>
                   </div>
-                   {/* CARD: PRIVE */}
-                  <div className="md:col-span-2 bg-slate-900 dark:bg-white p-8 rounded-3xl border border-slate-800 dark:border-slate-200 shadow-sm text-white dark:text-slate-900 relative overflow-hidden">
-                      <div className="absolute top-0 right-0 p-12 opacity-10 pointer-events-none">
-                          <Lock size={120}/>
+
+                  {/* --- LIGNE 4 : PWA (LARGE) --- */}
+
+                  {/* CARD: INSTALLATION (PWA) (3 cols) */}
+                  <div className="md:col-span-3 bg-slate-900 dark:bg-white p-8 rounded-3xl border border-slate-800 dark:border-slate-200 shadow-sm text-white dark:text-slate-900 relative overflow-hidden flex flex-col md:flex-row items-center gap-8">
+                      <div className="flex-1">
+                          <div className="bg-white/20 dark:bg-slate-900/10 p-3 rounded-xl w-fit mb-6 backdrop-blur-sm">
+                              <Smartphone size={28}/>
+                          </div>
+                          <h3 className="text-2xl font-bold mb-2">Installe l'App (sans Store)</h3>
+                          <p className="opacity-90 mb-6 max-w-xl">
+                              Oukonsort est une <strong>Progressive Web App (PWA)</strong>. Tu peux l'installer sur ton écran d'accueil comme une vraie appli, sans passer par l'App Store ou le Play Store.
+                          </p>
+                          <Link href="/install" className="inline-flex items-center gap-2 bg-white text-slate-900 dark:bg-slate-900 dark:text-white px-6 py-3 rounded-xl font-bold text-sm hover:scale-105 transition-transform">
+                              <Download size={18}/> Voir le tuto d'installation
+                          </Link>
                       </div>
-                      <div className="relative z-10">
-                        <div className="bg-white/20 dark:bg-slate-900/10 p-3 rounded-xl w-fit mb-6 backdrop-blur-sm">
-                            <Lock size={32}/>
-                        </div>
-                        <h3 className="text-2xl font-bold mb-2">Confidentialité & Lieux Privés</h3>
-                        <p className="opacity-90 mb-6 max-w-lg">
-                            C'est notre priorité. Si tu organises une soirée en "Lieu Privé" :
-                        </p>
-                        <div className="space-y-3">
-                            <div className="flex items-center gap-3">
-                                <CheckCircle size={20} className="text-green-400 dark:text-green-600"/>
-                                <span className="font-bold">Les inconnus</span>
-                                <span className="opacity-70 text-sm">ne voient QUE le point de RDV public (ex: Arrêt de Tram).</span>
+                      {/* Visual Mockup Abstract */}
+                      <div className="flex-1 w-full flex justify-center opacity-50 md:opacity-100">
+                           <div className="flex gap-4">
+                                <div className="w-16 h-16 rounded-2xl bg-white/10 dark:bg-slate-900/10 border border-white/20 flex items-center justify-center font-bold text-2xl">📱</div>
+                                <div className="w-16 h-16 rounded-2xl bg-white/10 dark:bg-slate-900/10 border border-white/20 flex items-center justify-center font-bold text-2xl">⚡️</div>
+                                <div className="w-16 h-16 rounded-2xl bg-white/10 dark:bg-slate-900/10 border border-white/20 flex items-center justify-center font-bold text-2xl">🔔</div>
+                           </div>
+                      </div>
+                  </div>
+
+                  {/* --- LIGNE 5 : PRIVÉ (LARGE) --- */}
+
+                   {/* CARD: PRIVE (3 cols) */}
+                  <div className="md:col-span-3 bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 hover:border-green-500/30 transition shadow-sm">
+                      <div className="flex flex-col md:flex-row gap-8 items-center">
+                        <div className="flex-1">
+                            <div className="bg-green-100 dark:bg-green-900/20 p-3 rounded-xl text-green-600 dark:text-green-400 w-fit mb-6">
+                                <Lock size={32}/>
                             </div>
-                             <div className="flex items-center gap-3">
-                                <CheckCircle size={20} className="text-green-400 dark:text-green-600"/>
-                                <span className="font-bold">Les inscrits</span>
-                                <span className="opacity-70 text-sm">doivent rejoindre l'événement (et donner leur pseudo) pour voir l'adresse exacte si tu l'as mise.</span>
+                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Lieux Privés & Sécurité</h3>
+                            <p className="text-slate-600 dark:text-slate-400 mb-6 max-w-2xl">
+                                C'est notre priorité. Si tu organises une soirée en "Lieu Privé" (chez toi), ton adresse reste cachée.
+                            </p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800 p-4 rounded-xl">
+                                    <Eye size={20} className="text-slate-400 shrink-0"/>
+                                    <p className="text-sm text-slate-600 dark:text-slate-300"><strong>Les inconnus</strong> ne voient QUE le point de RDV public (ex: Arrêt de Tram) ou un lieu à proximité de chez toi que tu détermines.</p>
+                                </div>
+                                <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800 p-4 rounded-xl">
+                                    <CheckCircle size={20} className="text-green-500 shrink-0"/>
+                                    <p className="text-sm text-slate-600 dark:text-slate-300">Grâce aux listes de participants, tu peux envoyer <strong>aux inscrits</strong> les informations sur l'adresse exacte ou bien le lieu de rdv à proximité.</p>
+                                </div>
                             </div>
                         </div>
+                      </div>
+                  </div>
+                  {/* CARD: OUKONSORT AI (Teaser) - 2 cols */}
+                   <div className="md:col-span-2 relative p-1 rounded-3xl overflow-hidden group">
+                      {/* Bordure animée */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 animate-[spin_4s_linear_infinite] opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                      <div className="absolute inset-[2px] bg-slate-900 rounded-[22px] z-0"></div>
+
+                      <div className="relative z-10 p-8 h-full flex flex-col justify-center">
+                           <div className="flex flex-wrap items-center gap-3 mb-4">
+                               <div className="bg-gradient-to-r from-indigo-500 to-purple-500 p-3 rounded-xl text-white shadow-lg shadow-purple-500/20">
+                                   <Bot size={28}/>
+                               </div>
+                               <h3 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 via-purple-300 to-pink-300">
+                                   Oukonsort AI
+                               </h3>
+                               <span className="bg-purple-500/20 border border-purple-500/30 text-purple-200 text-[10px] font-bold px-2 py-1 rounded-full uppercase">
+                                   Bêta +++
+                               </span>
+                           </div>
+
+                           <p className="text-slate-400 text-sm mb-6 leading-relaxed max-w-md">
+                               On entraîne une IA capable de générer ta soirée parfaite en une phrase.
+                               <br/>"Soirée posée, 10 personnes, budget serré." 👉 <strong className="text-purple-300">Boom, tout est prêt.</strong>
+                           </p>
+
+                           <div className="flex items-center gap-2 text-xs font-mono text-purple-400/80 bg-purple-900/20 w-fit px-3 py-1.5 rounded-lg border border-purple-500/20">
+                               <Sparkles size={14} className="animate-pulse"/>
+                               <span>Phase de R&D (Non déployé)</span>
+                           </div>
+                      </div>
+                      
+                      {/* Abstract shapes */}
+                      <div className="absolute right-0 bottom-0 w-64 h-64 bg-purple-600/20 blur-[80px] rounded-full pointer-events-none"></div>
+                  </div>
+
+                   {/* CARD: SOS (1 col) */}
+                  <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 hover:border-red-500/50 transition shadow-sm group relative overflow-hidden">
+                      {/* Fond Alerte */}
+                      <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none group-hover:opacity-10 transition-opacity">
+                           <Siren size={100} className="text-red-500"/>
+                      </div>
+                      <div className="flex items-start justify-between mb-6 relative z-10">
+                          <div className="bg-red-100 dark:bg-red-900/20 p-3 rounded-xl text-red-600 dark:text-red-400">
+                              <ShieldAlert size={32}/>
+                          </div>
+                          <span className="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-300 text-[10px] font-bold px-2 py-1 rounded-full border border-red-200 dark:border-red-800 uppercase tracking-wide">
+                              En étude
+                          </span>
+                      </div>
+                      <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2 relative z-10">Bouton SOS</h3>
+                      <p className="text-slate-600 dark:text-slate-400 text-sm mb-4 relative z-10">
+                          Pour des soirées 100% sûres.
+                      </p>
+                      <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-100 dark:border-slate-800 text-xs text-slate-500 relative z-10">
+                          <p>🔴 <strong>Objectif :</strong> Un bouton pour signaler toute activité suspecte immédiatement.</p>
+                          <p className="mt-2 text-[10px] italic opacity-70 border-t border-slate-200 dark:border-slate-800 pt-2">Feature en attente des soutiens adéquats.</p>
                       </div>
                   </div>
 
