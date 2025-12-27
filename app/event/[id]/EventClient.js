@@ -267,7 +267,7 @@ export default function EventClient() {
                 {/* ZONE ORGANISATEUR (Liste + Impression) */}
                 {isOrganizer && participantsList.length > 0 && (
                     <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800">
-                        <h4 className="text-xs font-bold text-slate-500 uppercase mb-3">Liste des invités (Admin)</h4>
+                        <h4 className="text-xs font-bold text-slate-500 uppercase mb-3">Liste des invités (Organisateur)</h4>
                         <div className="max-h-60 overflow-y-auto space-y-2 mb-4 bg-slate-50 dark:bg-slate-950 p-2 rounded-xl">
                             {participantsList.map((p, i) => (
                                 <div key={i} className="flex justify-between items-center text-sm p-2 bg-white dark:bg-slate-900 rounded-lg shadow-sm">
