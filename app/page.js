@@ -168,7 +168,7 @@ export default function Home() {
                             À propos du développeur <ArrowRight size={16}/>
                         </Link>
                         <a href="https://forms.gle/wdadEqpkfzXU8KoRA" className="inline-flex items-center gap-2 bg-white text-slate-900 hover:bg-slate-100 px-4 py-2 rounded-lg text-sm font-bold transition shadow-lg">
-                            <MessageCircle size={16}/> Suggérer une idée
+                            <MessageCircle size={16}/> Donner son avis <br></br> Suggérer une idée
                         </a>
                     </div>
 
