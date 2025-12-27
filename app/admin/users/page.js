@@ -7,16 +7,20 @@ import Link from 'next/link'
 import { 
   ArrowLeft, Search, User, ShieldAlert, BadgeCheck, 
   Mail, Calendar, Fingerprint, History, AlertTriangle, 
-  Ban, CheckCircle, XCircle, Clock, MapPin 
+  Ban, CheckCircle, XCircle, Clock, MapPin, Trash2, Archive 
 } from 'lucide-react'
 
 export default function AdminUsersPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState('active') // 'active' ou 'deleted'
   
   // Données
   const [users, setUsers] = useState([])
+  const [deletedUsers, setDeletedUsers] = useState([]) // Table archives
   const [selectedUser, setSelectedUser] = useState(null)
+  
+  // Détails chargés à la demande
   const [userDetails, setUserDetails] = useState({ events: [], sanctions: [] })
   const [loadingDetails, setLoadingDetails] = useState(false)
 
@@ -33,49 +37,65 @@ export default function AdminUsersPage() {
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
     if (profile?.role !== 'admin') { router.push('/dashboard'); return }
     
-    fetchUsers()
+    refreshData()
   }
 
-  // 1. Récupérer la liste des utilisateurs
-  async function fetchUsers() {
-    // Note: Pour avoir l'email, il faut idéalement que ton trigger de création de profil l'ait copié.
-    // Sinon, on ne l'aura pas ici car auth.users n'est pas accessible directement.
-    // On suppose ici que 'profiles' contient les infos de base.
+  function refreshData() {
+    setLoading(true)
+    Promise.all([fetchActiveUsers(), fetchDeletedUsers()]).then(() => setLoading(false))
+  }
+
+  // 1. Récupérer les utilisateurs ACTIFS (y compris ceux en cours de suppression)
+  async function fetchActiveUsers() {
     const { data } = await supabase
       .from('profiles')
       .select('*')
       .order('created_at', { ascending: false })
-    
     setUsers(data || [])
-    setLoading(false)
   }
 
-  // 2. Récupérer les détails complets d'un utilisateur au clic
-  async function handleSelectUser(user) {
-    setSelectedUser(user)
+  // 2. Récupérer les archives (Utilisateurs supprimés définitivement)
+  async function fetchDeletedUsers() {
+    const { data } = await supabase
+      .from('deleted_users')
+      .select('*')
+      .order('archived_at', { ascending: false })
+    setDeletedUsers(data || [])
+  }
+
+  // 3. Sélectionner un utilisateur (Logique différente selon le type)
+  async function handleSelectUser(user, isArchived = false) {
+    // On ajoute un flag pour savoir si c'est une archive
+    const userWithContext = { ...user, isArchived }
+    setSelectedUser(userWithContext)
     setLoadingDetails(true)
 
-    // A. Ses Événements (avec nombre de signalements)
-    const { data: userEvents } = await supabase
-      .from('events')
-      .select('*, reports(count)')
-      .eq('organizer_id', user.id)
-      .order('start_time', { ascending: false })
+    if (isArchived) {
+        // Pour les archivés, on n'a pas d'events ni de logs (car tout est supprimé en cascade)
+        // On vide juste les détails
+        setUserDetails({ events: [], sanctions: [] })
+        setLoadingDetails(false)
+    } else {
+        // Pour les actifs, on charge tout
+        const { data: userEvents } = await supabase
+            .from('events')
+            .select('*, reports(count)')
+            .eq('organizer_id', user.id)
+            .order('start_time', { ascending: false })
 
-    // B. Historique des Sanctions (Admin Logs qui le concernent)
-    // On cherche dans les logs où la cible est son pseudo ou son ID
-    const { data: userLogs } = await supabase
-      .from('admin_logs')
-      .select('*')
-      .or(`target_reference.eq.${user.pseudo},target_reference.eq.${user.id}`)
-      .in('action_type', ['BAN_USER', 'SUSPEND_USER']) // On ne garde que les sanctions
-      .order('created_at', { ascending: false })
+        const { data: userLogs } = await supabase
+            .from('admin_logs')
+            .select('*')
+            .or(`target_reference.eq.${user.pseudo},target_reference.eq.${user.id}`)
+            .in('action_type', ['BAN_USER', 'SUSPEND_USER'])
+            .order('created_at', { ascending: false })
 
-    setUserDetails({
-      events: userEvents || [],
-      sanctions: userLogs || []
-    })
-    setLoadingDetails(false)
+        setUserDetails({
+            events: userEvents || [],
+            sanctions: userLogs || []
+        })
+        setLoadingDetails(false)
+    }
   }
 
   // Helper pour calculer l'âge
@@ -85,17 +105,28 @@ export default function AdminUsersPage() {
     const birthDate = new Date(dateString)
     let age = today.getFullYear() - birthDate.getFullYear()
     const m = today.getMonth() - birthDate.getMonth()
-    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-        age--
-    }
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--
     return age
   }
 
-  // Filtrage de la liste
-  const filteredUsers = users.filter(u => {
+  // Helper pour calculer les jours restants avant suppression définitive
+  const getDaysRemaining = (deletedAt) => {
+    if (!deletedAt) return null
+    const deleteDate = new Date(deletedAt)
+    const targetDate = new Date(deleteDate.setDate(deleteDate.getDate() + 30))
+    const today = new Date()
+    const diffTime = targetDate - today
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) 
+    return diffDays > 0 ? diffDays : 0
+  }
+
+  // Filtrage intelligent selon l'onglet actif
+  const currentList = activeTab === 'active' ? users : deletedUsers
+  const filteredList = currentList.filter(u => {
     const term = searchTerm.toLowerCase()
     return (
       (u.pseudo || '').toLowerCase().includes(term) ||
+      (u.email || '').toLowerCase().includes(term) || // Recherche email pour les archivés
       (u.prenom || '').toLowerCase().includes(term) ||
       (u.nom || '').toLowerCase().includes(term) ||
       (u.id || '').toLowerCase().includes(term)
@@ -120,43 +151,72 @@ export default function AdminUsersPage() {
                     <User className="text-blue-600"/> Utilisateurs
                 </h1>
             </div>
+
+            {/* ONGLETS */}
+            <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+                <button 
+                    onClick={() => { setActiveTab('active'); setSelectedUser(null); }} 
+                    className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-lg transition ${activeTab === 'active' ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                >
+                    <User size={14}/> Annuaire ({users.length})
+                </button>
+                <button 
+                    onClick={() => { setActiveTab('deleted'); setSelectedUser(null); }} 
+                    className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-lg transition ${activeTab === 'deleted' ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                >
+                    <Trash2 size={14}/> Supprimés ({deletedUsers.length})
+                </button>
+            </div>
             
             <div className="relative">
                 <Search size={16} className="absolute left-3 top-3 text-slate-400"/>
                 <input 
                     type="text" 
-                    placeholder="Rechercher (Nom, Pseudo, ID...)" 
+                    placeholder="Rechercher..." 
                     className="w-full bg-slate-50 dark:bg-slate-800 pl-10 pr-4 py-2.5 rounded-xl text-sm border-none outline-none focus:ring-2 ring-blue-500/50 transition text-slate-900 dark:text-white"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
             </div>
-            <p className="text-xs text-slate-400 font-medium px-1">
-                {filteredUsers.length} utilisateur(s) trouvé(s)
-            </p>
         </div>
 
         {/* Liste Items */}
         <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
-            {filteredUsers.map(user => (
+            {filteredList.map(user => {
+                const daysRemaining = activeTab === 'active' ? getDaysRemaining(user.deleted_at) : 0
+                const isSoftDeleted = activeTab === 'active' && user.deleted_at
+
+                return (
                 <div 
                     key={user.id} 
-                    onClick={() => handleSelectUser(user)}
+                    onClick={() => handleSelectUser(user, activeTab === 'deleted')}
                     className={`p-4 cursor-pointer transition hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-3 ${selectedUser?.id === user.id ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
                 >
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg shrink-0 ${user.account_status === 'banned' ? 'bg-red-100 text-red-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg shrink-0 ${activeTab === 'deleted' ? 'bg-slate-200 dark:bg-slate-700 text-slate-500' : isSoftDeleted ? 'bg-red-50 text-red-500' : 'bg-blue-50 dark:bg-blue-900/30 text-blue-500'}`}>
                         {user.pseudo?.[0]?.toUpperCase()}
                     </div>
-                    <div className="min-w-0">
-                        <div className="flex items-center gap-2">
+                    <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between">
                             <h3 className="font-bold text-sm text-slate-800 dark:text-white truncate">@{user.pseudo}</h3>
-                            {user.account_status === 'banned' && <Ban size={12} className="text-red-500"/>}
-                            {user.account_status === 'suspended' && <AlertTriangle size={12} className="text-orange-500"/>}
+                            
+                            {/* TAGS DE STATUT */}
+                            {activeTab === 'deleted' ? (
+                                <span className="bg-slate-100 dark:bg-slate-800 text-slate-500 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">Archivé</span>
+                            ) : isSoftDeleted ? (
+                                <span className="bg-red-100 text-red-600 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase flex items-center gap-1"><Clock size={10}/> J-{daysRemaining}</span>
+                            ) : user.account_status === 'banned' ? (
+                                <span className="bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">Banni</span>
+                            ) : (
+                                <span className="bg-green-100 text-green-600 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">Actif</span>
+                            )}
                         </div>
-                        <p className="text-xs text-slate-500 truncate">{user.prenom} {user.nom}</p>
+                        <p className="text-xs text-slate-500 truncate">
+                            {activeTab === 'deleted' ? `Supprimé le ${new Date(user.archived_at).toLocaleDateString()}` : `${user.prenom} ${user.nom}`}
+                        </p>
                     </div>
                 </div>
-            ))}
+            )})}
+            {filteredList.length === 0 && <p className="text-center p-8 text-slate-400 text-sm">Aucun utilisateur trouvé.</p>}
         </div>
       </div>
 
@@ -168,20 +228,31 @@ export default function AdminUsersPage() {
                 {/* 1. HEADER PROFIL */}
                 <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 flex items-start justify-between">
                     <div className="flex items-center gap-5">
-                        <div className={`w-20 h-20 rounded-full flex items-center justify-center font-bold text-3xl ${selectedUser.account_status === 'banned' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'}`}>
+                        <div className={`w-20 h-20 rounded-full flex items-center justify-center font-bold text-3xl ${selectedUser.isArchived ? 'bg-slate-200 dark:bg-slate-800 text-slate-500' : 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'}`}>
                             {selectedUser.pseudo?.[0]?.toUpperCase()}
                         </div>
                         <div>
-                            <h2 className="text-2xl font-black text-slate-900 dark:text-white">@{selectedUser.pseudo}</h2>
+                            <h2 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+                                @{selectedUser.pseudo}
+                                {selectedUser.isArchived && <span className="text-xs bg-slate-200 text-slate-600 px-2 py-1 rounded-lg">ARCHIVÉ</span>}
+                            </h2>
                             <div className="flex items-center gap-2 mt-1">
-                                <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase ${
-                                    selectedUser.account_status === 'active' ? 'bg-green-100 text-green-700' :
-                                    selectedUser.account_status === 'suspended' ? 'bg-orange-100 text-orange-700' :
-                                    'bg-red-100 text-red-700'
-                                }`}>
-                                    {selectedUser.account_status}
-                                </span>
-                                <span className="text-xs text-slate-400">Inscrit le {new Date(selectedUser.created_at).toLocaleDateString()}</span>
+                                {selectedUser.isArchived ? (
+                                    <p className="text-xs text-slate-500">
+                                        ID Archivage: {selectedUser.id}
+                                    </p>
+                                ) : (
+                                    <>
+                                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase ${
+                                            selectedUser.deleted_at ? 'bg-red-100 text-red-700 animate-pulse' :
+                                            selectedUser.account_status === 'active' ? 'bg-green-100 text-green-700' :
+                                            'bg-orange-100 text-orange-700'
+                                        }`}>
+                                            {selectedUser.deleted_at ? `Suppression dans ${getDaysRemaining(selectedUser.deleted_at)} jours` : selectedUser.account_status}
+                                        </span>
+                                        <span className="text-xs text-slate-400">Inscrit le {new Date(selectedUser.created_at).toLocaleDateString()}</span>
+                                    </>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -194,23 +265,38 @@ export default function AdminUsersPage() {
                         <h3 className="font-bold text-slate-500 uppercase text-xs flex items-center gap-2 mb-2">
                             <BadgeCheck size={14}/> État Civil
                         </h3>
-                        <div>
-                            <p className="text-xs text-slate-400">Nom complet</p>
-                            <p className="font-bold text-slate-800 dark:text-white">{selectedUser.prenom} {selectedUser.nom}</p>
-                        </div>
-                        <div className="flex gap-6">
-                            <div>
-                                <p className="text-xs text-slate-400">Date de naissance</p>
-                                <p className="font-medium text-slate-800 dark:text-white">{new Date(selectedUser.date_naissance).toLocaleDateString()}</p>
-                            </div>
-                            <div>
-                                <p className="text-xs text-slate-400">Âge</p>
-                                <p className="font-medium text-slate-800 dark:text-white">{calculateAge(selectedUser.date_naissance)} ans</p>
-                            </div>
-                        </div>
+                        
+                        {/* LOGIQUE D'AFFICHAGE CONDITIONNEL (Phase 1 vs Phase 2) */}
+                        {selectedUser.isArchived && !selectedUser.nom ? (
+                            // Phase 2 : > 1 an (Anonymisé)
+                            <p className="text-sm text-slate-400 italic">Données personnelles purgées (RGPD).</p>
+                        ) : (
+                            // Phase 1 (Archivé récent) OU Actif : On affiche tout
+                            <>
+                                <div>
+                                    <p className="text-xs text-slate-400">Nom complet</p>
+                                    <p className="font-bold text-slate-800 dark:text-white">{selectedUser.prenom} {selectedUser.nom}</p>
+                                </div>
+                                <div className="flex gap-6">
+                                    <div>
+                                        <p className="text-xs text-slate-400">Date de naissance</p>
+                                        <p className="font-medium text-slate-800 dark:text-white">
+                                            {selectedUser.date_naissance ? new Date(selectedUser.date_naissance).toLocaleDateString() : '?'}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-slate-400">Âge</p>
+                                        <p className="font-medium text-slate-800 dark:text-white">{calculateAge(selectedUser.date_naissance)} ans</p>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                        
                         <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
                             <p className="text-xs text-slate-400 mb-1 flex items-center gap-1"><Mail size={10}/> Email</p>
-                            <p className="font-mono text-sm text-slate-700 dark:text-slate-300">{selectedUser.email || "Non visible (Voir Auth)"}</p>
+                            <p className="font-mono text-sm text-slate-700 dark:text-slate-300">
+                                {selectedUser.isArchived ? selectedUser.email : "Masqué (Voir Auth ou Base)"}
+                            </p>
                         </div>
                     </div>
 
@@ -220,114 +306,81 @@ export default function AdminUsersPage() {
                             <Fingerprint size={14}/> Identifiants Système
                         </h3>
                         <div>
-                            <p className="text-xs text-slate-400 mb-1">ID Système (Interne)</p>
+                            <p className="text-xs text-slate-400 mb-1">ID Unique</p>
                             <code className="block bg-slate-50 dark:bg-slate-950 p-2 rounded-lg text-xs font-mono text-slate-600 dark:text-slate-400 break-all">
-                                {selectedUser.id} {/* Souvent le même dans Supabase Auth/Public */}
+                                {selectedUser.id}
                             </code>
                         </div>
-                    </div>
-                </div>
-
-                {/* 3. STATUT CNI (Placeholder) */}
-                <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 relative overflow-hidden">
-                    <div className="flex items-start justify-between relative z-10">
-                        <div>
-                            <h3 className="font-bold text-slate-800 dark:text-white flex items-center gap-2 mb-1">
-                                <ShieldAlert size={18} className="text-blue-500"/> Vérification CNI
-                            </h3>
-                            <p className="text-sm text-slate-500 mb-4">Statut actuel du dossier d'identité.</p>
-                            
-                            <div className="flex gap-2">
-                                {/* Badges inactifs pour la démo */}
-                                <span className="opacity-40 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold flex items-center gap-1"><CheckCircle size={12}/> Validée</span>
-                                <span className="px-3 py-1 bg-slate-200 text-slate-600 rounded-full text-xs font-bold flex items-center gap-1 ring-2 ring-blue-500 ring-offset-2"><Clock size={12}/> En attente</span>
-                                <span className="opacity-40 px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-bold flex items-center gap-1"><XCircle size={12}/> Refusée</span>
+                        {selectedUser.isArchived && (
+                            <div>
+                                <p className="text-xs text-slate-400 mb-1">Raison Archivage</p>
+                                <code className="block bg-red-50 dark:bg-red-900/10 p-2 rounded-lg text-xs font-mono text-red-600 dark:text-red-300">
+                                    {selectedUser.reason || 'Suppression Manuelle'}
+                                </code>
                             </div>
-                        </div>
-                        <div className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wide">
-                            🚧 En développement
-                        </div>
+                        )}
                     </div>
                 </div>
 
-                {/* 4. HISTORIQUE SANCTIONS */}
-                <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
-                    <h3 className="font-bold text-red-600 dark:text-red-400 uppercase text-xs flex items-center gap-2 mb-4">
-                        <AlertTriangle size={14}/> Historique des Sanctions ({userDetails.sanctions.length})
-                    </h3>
-                    
-                    {userDetails.sanctions.length > 0 ? (
-                        <div className="space-y-3">
-                            {userDetails.sanctions.map(log => (
-                                <div key={log.id} className="bg-red-50 dark:bg-red-900/10 p-3 rounded-lg border border-red-100 dark:border-red-900/30 flex justify-between items-center">
-                                    <div>
-                                        <p className="text-sm font-bold text-red-800 dark:text-red-300">{log.action_type === 'BAN_USER' ? 'BANNISSEMENT' : 'SUSPENSION'}</p>
-                                        <p className="text-xs text-red-600/70">{new Date(log.created_at).toLocaleDateString()}</p>
+                {/* 4. HISTORIQUE SANCTIONS (Si non archivé) */}
+                {!selectedUser.isArchived && (
+                    <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
+                        <h3 className="font-bold text-red-600 dark:text-red-400 uppercase text-xs flex items-center gap-2 mb-4">
+                            <AlertTriangle size={14}/> Historique des Sanctions ({userDetails.sanctions.length})
+                        </h3>
+                        
+                        {userDetails.sanctions.length > 0 ? (
+                            <div className="space-y-3">
+                                {userDetails.sanctions.map(log => (
+                                    <div key={log.id} className="bg-red-50 dark:bg-red-900/10 p-3 rounded-lg border border-red-100 dark:border-red-900/30 flex justify-between items-center">
+                                        <div>
+                                            <p className="text-sm font-bold text-red-800 dark:text-red-300">{log.action_type === 'BAN_USER' ? 'BANNISSEMENT' : 'SUSPENSION'}</p>
+                                            <p className="text-xs text-red-600/70">{new Date(log.created_at).toLocaleDateString()}</p>
+                                        </div>
+                                        <span className="text-xs font-mono text-red-500">{log.details}</span>
                                     </div>
-                                    <span className="text-xs font-mono text-red-500">{log.details}</span>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <p className="text-sm text-slate-400 italic">Aucune sanction enregistrée. Utilisateur exemplaire.</p>
-                    )}
-                </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-sm text-slate-400 italic">Aucune sanction enregistrée.</p>
+                        )}
+                    </div>
+                )}
 
-                {/* 5. HISTORIQUE ÉVÉNEMENTS */}
-                <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
-                    <h3 className="font-bold text-slate-500 uppercase text-xs flex items-center gap-2 mb-4">
-                        <History size={14}/> Historique des Événements ({userDetails.events.length})
-                    </h3>
+                {/* 5. HISTORIQUE ÉVÉNEMENTS (Si non archivé) */}
+                {!selectedUser.isArchived && (
+                    <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
+                        <h3 className="font-bold text-slate-500 uppercase text-xs flex items-center gap-2 mb-4">
+                            <History size={14}/> Historique des Événements ({userDetails.events.length})
+                        </h3>
 
-                    {loadingDetails ? (
-                        <div className="text-center py-4 text-slate-400">Chargement de l'historique...</div>
-                    ) : userDetails.events.length > 0 ? (
-                        <div className="space-y-3">
-                            {userDetails.events.map(evt => (
-                                <div key={evt.id} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700">
-                                    <div className="min-w-0">
-                                        <div className="flex items-center gap-2">
+                        {loadingDetails ? (
+                            <div className="text-center py-4 text-slate-400">Chargement...</div>
+                        ) : userDetails.events.length > 0 ? (
+                            <div className="space-y-3">
+                                {userDetails.events.map(evt => (
+                                    <div key={evt.id} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700">
+                                        <div className="min-w-0">
                                             <h4 className="font-bold text-sm text-slate-800 dark:text-white truncate">{evt.title}</h4>
-                                            {/* BADGES STATUT EVENT */}
-                                            {evt.is_banned ? (
-                                                <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-bold uppercase">Banni</span>
-                                            ) : evt.is_cancelled ? (
-                                                <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-bold uppercase">Annulé</span>
-                                            ) : evt.is_visible ? (
-                                                <span className="text-[10px] bg-green-100 text-green-600 px-1.5 py-0.5 rounded font-bold uppercase">En ligne</span>
-                                            ) : (
-                                                <span className="text-[10px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-bold uppercase">Terminé</span>
-                                            )}
+                                            <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                                                <Calendar size={10}/> {new Date(evt.start_time).toLocaleDateString()}
+                                            </p>
                                         </div>
-                                        <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
-                                            <Calendar size={10}/> {new Date(evt.start_time).toLocaleDateString()}
-                                            <span className="mx-1">•</span>
-                                            <MapPin size={10}/> {evt.location_name || "Privé"}
-                                        </p>
                                     </div>
-                                    
-                                    {/* Compteur Signalements */}
-                                    {evt.reports && evt.reports[0]?.count > 0 ? (
-                                        <div className="flex items-center gap-1 bg-orange-100 text-orange-700 px-2 py-1 rounded-lg text-xs font-bold" title="Signalements reçus">
-                                            <AlertTriangle size={12}/> {evt.reports[0].count}
-                                        </div>
-                                    ) : (
-                                        <div className="text-xs text-slate-300 font-bold px-2">0 sign.</div>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <p className="text-sm text-slate-400 italic">Aucun événement organisé pour le moment.</p>
-                    )}
-                </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-sm text-slate-400 italic">Aucun événement organisé.</p>
+                        )}
+                    </div>
+                )}
 
             </div>
         ) : (
             <div className="h-full flex flex-col items-center justify-center text-slate-400 opacity-50">
                 <User size={64} className="mb-4" />
                 <p className="text-lg font-medium">Sélectionnez un utilisateur</p>
-                <p className="text-sm">Pour voir son dossier complet, ses sanctions et ses événements.</p>
+                <p className="text-sm">Explorez l'annuaire ou les archives.</p>
             </div>
         )}
       </div>
