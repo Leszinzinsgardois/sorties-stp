@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { AlertCircle, Lock, Mail } from 'lucide-react'
+import { AlertCircle, Lock, Mail, AlertTriangle } from 'lucide-react'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -28,10 +28,10 @@ export default function LoginPage() {
 
     try {
       if (isSignUp) {
+        // --- INSCRIPTION ---
         if (!termsAccepted) throw new Error("Tu dois accepter les conditions.")
         if (!pseudo || !nom || !prenom || !dob) throw new Error("Tout remplir SVP.")
 
-        // 1. On envoie tout dans les méta-données pour le Trigger SQL
         const { data: authData, error: authError } = await supabase.auth.signUp({ 
           email, 
           password,
@@ -52,12 +52,57 @@ export default function LoginPage() {
         setIsSignUp(false)
 
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password })
-        if (error) throw error
+        // --- CONNEXION ---
+        const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+        
+        // 1. Gestion Erreur Auth (Mot de passe faux ou User inexistant)
+        if (signInError) {
+            // On ne donne pas de détails pour la sécurité
+            throw new Error("Identifiant ou mot de passe incorrect.")
+        }
+
+        // 2. Vérification Soft Delete (Suppression logique)
+        if (data?.user) {
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('deleted_at')
+                .eq('id', data.user.id)
+                .single()
+
+            if (profile?.deleted_at) {
+                const deletedDate = new Date(profile.deleted_at)
+                const now = new Date()
+                // Différence en jours
+                const diffTime = Math.abs(now - deletedDate)
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+                if (diffDays > 30) {
+                    // CAS 1 : Supprimé depuis > 30 jours -> On fait croire que le compte n'existe pas
+                    await supabase.auth.signOut()
+                    throw new Error("Identifiant ou mot de passe incorrect.")
+                } else {
+                    // CAS 2 : Supprimé depuis < 30 jours -> On propose la réactivation
+                    const reactivate = confirm("Ce compte est en cours de suppression. Voulez-vous le réactiver ?")
+                    if (reactivate) {
+                        await supabase.from('profiles').update({ deleted_at: null }).eq('id', data.user.id)
+                        // On continue vers le dashboard
+                    } else {
+                        await supabase.auth.signOut()
+                        return // On arrête là sans erreur, juste retour login
+                    }
+                }
+            }
+        }
+
         router.push('/dashboard')
       }
     } catch (err) {
-      setError(err.message)
+      // Si c'est une erreur "Invalid login credentials", on la traduit proprement
+      if (err.message.includes("Invalid login credentials")) {
+          setError("Identifiant ou mot de passe incorrect.")
+      } else {
+          setError(err.message)
+      }
     } finally {
       setLoading(false)
     }
@@ -76,9 +121,16 @@ export default function LoginPage() {
             </p>
         </div>
 
+        {/* --- CADRE D'ERREUR STYLISÉ --- */}
         {error && (
-          <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-300 p-3 rounded-lg text-sm mb-6 border border-red-100 dark:border-red-800">
-            {error}
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-xl p-4 mb-6 flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
+            <AlertTriangle className="text-red-600 dark:text-red-400 shrink-0 mt-0.5" size={20} />
+            <div>
+                <h3 className="text-sm font-bold text-red-700 dark:text-red-300">Erreur de connexion</h3>
+                <p className="text-xs text-red-600 dark:text-red-400 mt-1 leading-snug">
+                    {error}
+                </p>
+            </div>
           </div>
         )}
 
