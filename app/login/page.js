@@ -4,13 +4,15 @@ import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { AlertCircle, Lock, Mail, AlertTriangle } from 'lucide-react'
+import { AlertCircle, Lock, Mail, AlertTriangle, ArrowLeft } from 'lucide-react'
 
 export default function LoginPage() {
   const router = useRouter()
   const [isSignUp, setIsSignUp] = useState(false)
+  const [isResetMode, setIsResetMode] = useState(false) // Mode "Mot de passe oublié"
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [successMsg, setSuccessMsg] = useState(null)
 
   // Champs
   const [email, setEmail] = useState('')
@@ -21,83 +23,87 @@ export default function LoginPage() {
   const [dob, setDob] = useState('')
   const [termsAccepted, setTermsAccepted] = useState(false)
 
+  // --- GESTION AUTH ---
   const handleAuth = async (e) => {
     e.preventDefault()
     setLoading(true)
     setError(null)
+    setSuccessMsg(null)
 
     try {
-      if (isSignUp) {
-        // --- INSCRIPTION ---
+      if (isResetMode) {
+        // --- 1. MOT DE PASSE OUBLIÉ ---
+        const redirectUrl = `${window.location.origin}/update-password`
+        
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: redirectUrl,
+        })
+
+        if (error) throw error
+        setSuccessMsg("Si un compte existe avec cet email, un lien de réinitialisation a été envoyé.")
+
+      } else if (isSignUp) {
+        // --- 2. INSCRIPTION ---
         if (!termsAccepted) throw new Error("Tu dois accepter les conditions.")
         if (!pseudo || !nom || !prenom || !dob) throw new Error("Tout remplir SVP.")
 
+        // C'est ICI que la fusion a eu lieu 👇
         const { data: authData, error: authError } = await supabase.auth.signUp({ 
           email, 
           password,
           options: {
+            // Redirection après validation de l'email vers la page d'accueil avec ?welcome=true
+            emailRedirectTo: `${window.location.origin}/?welcome=true`, 
             data: {
-              pseudo: pseudo,
-              nom: nom,
-              prenom: prenom,
-              date_naissance: dob,
-              terms_accepted_at: new Date().toISOString()
+              pseudo: pseudo, nom: nom, prenom: prenom,
+              date_naissance: dob, terms_accepted_at: new Date().toISOString()
             }
           }
         })
 
         if (authError) throw authError
         
-        alert("Compte créé ! Vérifie tes emails pour confirmer.")
+        // Message si confirmation requise
+        if (authData?.user && !authData.session) {
+             setSuccessMsg("Compte créé ! Vérifie tes emails pour confirmer ton inscription avant de te connecter.")
+             setIsSignUp(false) // Retour au login
+             return // On arrête là
+        }
+        
+        alert("Compte créé !")
         setIsSignUp(false)
 
       } else {
-        // --- CONNEXION ---
+        // --- 3. CONNEXION ---
         const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password })
         
-        // 1. Gestion Erreur Auth (Mot de passe faux ou User inexistant)
-        if (signInError) {
-            // On ne donne pas de détails pour la sécurité
-            throw new Error("Identifiant ou mot de passe incorrect.")
-        }
+        if (signInError) throw new Error("Identifiant ou mot de passe incorrect.")
 
-        // 2. Vérification Soft Delete (Suppression logique)
+        // Vérification Soft Delete
         if (data?.user) {
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select('deleted_at')
-                .eq('id', data.user.id)
-                .single()
+            const { data: profile } = await supabase.from('profiles').select('deleted_at').eq('id', data.user.id).single()
 
             if (profile?.deleted_at) {
                 const deletedDate = new Date(profile.deleted_at)
-                const now = new Date()
-                // Différence en jours
-                const diffTime = Math.abs(now - deletedDate)
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+                const diffDays = Math.ceil(Math.abs(new Date() - deletedDate) / (1000 * 60 * 60 * 24))
 
                 if (diffDays > 30) {
-                    // CAS 1 : Supprimé depuis > 30 jours -> On fait croire que le compte n'existe pas
                     await supabase.auth.signOut()
                     throw new Error("Identifiant ou mot de passe incorrect.")
                 } else {
-                    // CAS 2 : Supprimé depuis < 30 jours -> On propose la réactivation
                     const reactivate = confirm("Ce compte est en cours de suppression. Voulez-vous le réactiver ?")
                     if (reactivate) {
                         await supabase.from('profiles').update({ deleted_at: null }).eq('id', data.user.id)
-                        // On continue vers le dashboard
                     } else {
                         await supabase.auth.signOut()
-                        return // On arrête là sans erreur, juste retour login
+                        return
                     }
                 }
             }
         }
-
         router.push('/dashboard')
       }
     } catch (err) {
-      // Si c'est une erreur "Invalid login credentials", on la traduit proprement
       if (err.message.includes("Invalid login credentials")) {
           setError("Identifiant ou mot de passe incorrect.")
       } else {
@@ -117,26 +123,33 @@ export default function LoginPage() {
             Oukonsort
             </h1>
             <p className="text-slate-500 dark:text-slate-400 mt-2">
-            {isSignUp ? "Rejoins la communauté étudiante" : "Connecte-toi pour organiser"}
+            {isResetMode ? "Récupération de compte" : isSignUp ? "Rejoins la communauté étudiante" : "Connecte-toi pour organiser"}
             </p>
         </div>
 
-        {/* --- CADRE D'ERREUR STYLISÉ --- */}
+        {/* MESSAGES (Erreur / Succès) */}
         {error && (
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-xl p-4 mb-6 flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
             <AlertTriangle className="text-red-600 dark:text-red-400 shrink-0 mt-0.5" size={20} />
             <div>
-                <h3 className="text-sm font-bold text-red-700 dark:text-red-300">Erreur de connexion</h3>
-                <p className="text-xs text-red-600 dark:text-red-400 mt-1 leading-snug">
-                    {error}
-                </p>
+                <h3 className="text-sm font-bold text-red-700 dark:text-red-300">Erreur</h3>
+                <p className="text-xs text-red-600 dark:text-red-400 mt-1 leading-snug">{error}</p>
+            </div>
+          </div>
+        )}
+        {successMsg && (
+          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/50 rounded-xl p-4 mb-6 flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
+            <AlertCircle className="text-green-600 dark:text-green-400 shrink-0 mt-0.5" size={20} />
+            <div>
+                <h3 className="text-sm font-bold text-green-700 dark:text-green-300">Email envoyé</h3>
+                <p className="text-xs text-green-600 dark:text-green-400 mt-1 leading-snug">{successMsg}</p>
             </div>
           </div>
         )}
 
         <form onSubmit={handleAuth} className="space-y-4">
           
-          {/* EMAIL */}
+          {/* EMAIL (Toujours visible) */}
           <div>
             <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Email</label>
             <div className="relative">
@@ -154,32 +167,42 @@ export default function LoginPage() {
             )}
           </div>
 
-          {/* PASSWORD */}
-          <div>
-            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Mot de passe</label>
-            <div className="relative">
-                <input 
-                type="password" required minLength={6}
-                className="w-full rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition pl-10"
-                value={password} onChange={(e) => setPassword(e.target.value)}
-                />
-                <Lock size={18} className="absolute left-3 top-3.5 text-slate-400"/>
+          {/* PASSWORD (Caché si Reset Mode) */}
+          {!isResetMode && (
+            <div>
+                <div className="flex justify-between items-center mb-1">
+                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Mot de passe</label>
+                    {/* Lien Mot de passe oublié */}
+                    {!isSignUp && (
+                        <button type="button" onClick={() => { setIsResetMode(true); setError(null); setSuccessMsg(null); }} className="text-[10px] font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400">
+                            Mot de passe oublié ?
+                        </button>
+                    )}
+                </div>
+                <div className="relative">
+                    <input 
+                    type="password" required minLength={6}
+                    className="w-full rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition pl-10"
+                    value={password} onChange={(e) => setPassword(e.target.value)}
+                    />
+                    <Lock size={18} className="absolute left-3 top-3.5 text-slate-400"/>
+                </div>
+                {isSignUp && (
+                    <p className="text-[10px] text-slate-500 mt-1 ml-1">
+                        Tu pourras le modifier plus tard via ton profil.
+                    </p>
+                )}
             </div>
-            {isSignUp && (
-                <p className="text-[10px] text-slate-500 mt-1 ml-1">
-                    Tu pourras le modifier plus tard via ton profil.
-                </p>
-            )}
-          </div>
+          )}
 
-          {isSignUp && (
+          {/* CHAMPS SUPPLÉMENTAIRES (Seulement pour Inscription) */}
+          {isSignUp && !isResetMode && (
             <div className="space-y-4 animate-in fade-in slide-in-from-top-4 pt-2">
                
-               {/* ALERTE INFO IMMUABLE */}
                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-100 dark:border-blue-800 flex gap-2 items-start">
                     <AlertCircle size={16} className="text-blue-600 dark:text-blue-400 shrink-0 mt-0.5"/>
                     <p className="text-xs text-blue-800 dark:text-blue-200 leading-tight">
-                        Attention : Pour garantir la confiance entre étudiants, ton <strong>Identité</strong> (Nom, Prénom, Âge) et ton <strong>Pseudo</strong> ne seront <u>plus modifiables</u> une fois inscrit.
+                        Attention : Pour garantir la confiance, ton <strong>Identité</strong> et ton <strong>Pseudo</strong> ne seront <u>plus modifiables</u>.
                     </p>
                </div>
 
@@ -205,15 +228,24 @@ export default function LoginPage() {
           )}
 
           <button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition active:scale-95 disabled:opacity-50 mt-4">
-            {loading ? 'Chargement...' : (isSignUp ? "S'inscrire" : 'Se connecter')}
+            {loading ? 'Chargement...' : isResetMode ? 'Envoyer le lien' : isSignUp ? "S'inscrire" : 'Se connecter'}
           </button>
+
+          {/* Bouton Retour (si Reset Mode) */}
+          {isResetMode && (
+            <button type="button" onClick={() => { setIsResetMode(false); setError(null); setSuccessMsg(null); }} className="w-full text-center text-sm text-slate-500 hover:text-slate-700 mt-2 flex items-center justify-center gap-2">
+                <ArrowLeft size={16}/> Retour à la connexion
+            </button>
+          )}
         </form>
 
-        <div className="mt-8 text-center">
-          <button onClick={() => setIsSignUp(!isSignUp)} className="text-sm text-slate-500 dark:text-slate-400 hover:text-blue-500 transition">
-            {isSignUp ? "J'ai déjà un compte" : "Créer un compte"}
-          </button>
-        </div>
+        {!isResetMode && (
+            <div className="mt-8 text-center">
+            <button onClick={() => setIsSignUp(!isSignUp)} className="text-sm text-slate-500 dark:text-slate-400 hover:text-blue-500 transition">
+                {isSignUp ? "J'ai déjà un compte" : "Créer un compte"}
+            </button>
+            </div>
+        )}
       </div>
     </main>
   )
