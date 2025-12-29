@@ -1,20 +1,24 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
-import { useRouter } from 'next/navigation' // Pour la redirection
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { 
   Building2, Calendar, Megaphone, MapPin, 
   ExternalLink, Info, AlertTriangle, BadgeCheck, 
-  ArrowLeft, Clock 
+  ArrowLeft, Clock, User, ChevronLeft, ChevronRight
 } from 'lucide-react'
 
 export default function PartnersPage() {
   const router = useRouter()
   const [posts, setPosts] = useState([])
+  const [partners, setPartners] = useState([]) // Liste complète des partenaires
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
+  
+  // Référence pour le scroll du carrousel
+  const scrollRef = useRef(null)
 
   useEffect(() => {
     checkUserAndFetch()
@@ -22,29 +26,45 @@ export default function PartnersPage() {
 
   // VÉRIFICATION AUTH + FETCH
   async function checkUserAndFetch() {
-    // 1. Vérifier si connecté
     const { data: { user } } = await supabase.auth.getUser()
     
     if (!user) {
-      // Si pas connecté, on dégage vers le login
       router.push('/login')
       return
     }
 
-    // 2. Si connecté, on charge les données
-    const { data } = await supabase
+    // 1. Récupérer les événements actifs
+    const { data: eventsData } = await supabase
       .from('institutional_events')
       .select('*, institutions(*)')
       .eq('status', 'active')
       .order('created_at', { ascending: false })
       
-    if (data) setPosts(data)
+    if (eventsData) setPosts(eventsData)
+
+    // 2. Récupérer la liste COMPLÈTE des partenaires (actifs)
+    const { data: partnersData } = await supabase
+        .from('institutions')
+        .select('*')
+        .eq('status', 'active') // On ne veut que les comptes actifs
+        .order('name', { ascending: true })
+
+    if (partnersData) setPartners(partnersData)
+
     setLoading(false)
+  }
+
+  // Fonction de scroll pour le carrousel
+  const scroll = (direction) => {
+    if (scrollRef.current) {
+        const { current } = scrollRef
+        const scrollAmount = direction === 'left' ? -300 : 300
+        current.scrollBy({ left: scrollAmount, behavior: 'smooth' })
+    }
   }
 
   const filteredPosts = posts.filter(post => filter === 'all' || post.type === filter)
 
-  // Pendant le chargement ou la vérification auth, on affiche un loader
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
         <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
@@ -105,8 +125,76 @@ export default function PartnersPage() {
         </div>
       </div>
 
-      <div className="max-w-2xl mx-auto px-4 mt-6 space-y-6">
+      <div className="max-w-2xl mx-auto px-4 mt-6 space-y-8">
         
+        {/* === SECTION 1 : CARROUSEL DES PARTENAIRES === */}
+        {partners.length > 0 && (
+            <div className="relative group/carousel">
+                <div className="flex justify-between items-end mb-4 px-1">
+                    <h2 className="text-lg font-black text-slate-900 dark:text-white">Nos Partenaires</h2>
+                    <span className="text-xs font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md">
+                        {partners.length}
+                    </span>
+                </div>
+
+                {/* Bouton Gauche (Caché sur mobile, visible au hover sur PC) */}
+                <button 
+                    onClick={() => scroll('left')}
+                    className="absolute left-0 top-1/2 -translate-y-1/2 z-10 p-2 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-full shadow-lg border border-slate-200 dark:border-slate-700 opacity-0 group-hover/carousel:opacity-100 transition-opacity hidden md:flex hover:scale-110"
+                >
+                    <ChevronLeft size={20} className="text-slate-700 dark:text-slate-300"/>
+                </button>
+
+                {/* Container Scrollable */}
+                <div 
+                    ref={scrollRef}
+                    className="flex gap-4 overflow-x-auto snap-x snap-mandatory no-scrollbar pb-4"
+                >
+                    {partners.map(partner => (
+                        <Link 
+                            key={partner.id} 
+                            href={`/partners/${partner.id}`}
+                            className="snap-center shrink-0 w-[85%] md:w-[280px] bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-blue-500/30 transition-all group"
+                        >
+                            <div className="flex items-center gap-4">
+                                {/* Logo */}
+                                <div className="w-14 h-14 shrink-0 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 overflow-hidden flex items-center justify-center">
+                                    {partner.logo_url ? (
+                                        <img src={partner.logo_url} alt={partner.name} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <Building2 size={24} className="text-slate-300"/>
+                                    )}
+                                </div>
+                                
+                                {/* Infos */}
+                                <div className="min-w-0">
+                                    <h3 className="font-bold text-slate-900 dark:text-white truncate pr-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                        {partner.name}
+                                    </h3>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 capitalize mb-1">
+                                        {partner.type === 'association' ? 'Asso.' : partner.type === 'public' ? 'Institution' : 'Établissement'}
+                                    </p>
+                                    {partner.is_partner && (
+                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-600 bg-blue-50 dark:bg-blue-900/20 px-1.5 py-0.5 rounded border border-blue-100 dark:border-blue-900/30">
+                                            <BadgeCheck size={10}/> Certifié
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                        </Link>
+                    ))}
+                </div>
+
+                {/* Bouton Droite */}
+                <button 
+                    onClick={() => scroll('right')}
+                    className="absolute right-0 top-1/2 -translate-y-1/2 z-10 p-2 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-full shadow-lg border border-slate-200 dark:border-slate-700 opacity-0 group-hover/carousel:opacity-100 transition-opacity hidden md:flex hover:scale-110"
+                >
+                    <ChevronRight size={20} className="text-slate-700 dark:text-slate-300"/>
+                </button>
+            </div>
+        )}
+
         {/* BANNIÈRE BÊTA */}
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-100 dark:border-blue-800/50 p-4 rounded-2xl flex items-start gap-3">
             <div className="bg-blue-100 dark:bg-blue-900/40 p-2 rounded-lg text-blue-600 dark:text-blue-400 shrink-0">
@@ -120,28 +208,33 @@ export default function PartnersPage() {
             </div>
         </div>
 
-        {/* LISTE DES POSTS */}
-        {filteredPosts.length === 0 ? (
-            <div className="text-center py-20 flex flex-col items-center bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-300 dark:border-slate-800">
-                <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-400 mb-4">
-                    <Building2 size={24}/>
+        {/* === SECTION 2 : FLUX D'ACTUALITÉ === */}
+        <div>
+            <h2 className="text-lg font-black text-slate-900 dark:text-white mb-4 px-1">Le Flux</h2>
+            
+            {filteredPosts.length === 0 ? (
+                <div className="text-center py-20 flex flex-col items-center bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-300 dark:border-slate-800">
+                    <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-400 mb-4">
+                        <Building2 size={24}/>
+                    </div>
+                    <h3 className="text-lg font-bold text-slate-700 dark:text-slate-300">C'est calme par ici</h3>
+                    <p className="text-sm text-slate-500 max-w-xs mx-auto mt-1">Aucune offre correspondant à tes filtres pour le moment.</p>
                 </div>
-                <h3 className="text-lg font-bold text-slate-700 dark:text-slate-300">C'est calme par ici</h3>
-                <p className="text-sm text-slate-500 max-w-xs mx-auto mt-1">Aucune offre correspondant à tes filtres pour le moment.</p>
-            </div>
-        ) : (
-            <div className="space-y-6">
-                {filteredPosts.map(post => (
-                    <CardInstitution key={post.id} post={post} />
-                ))}
-            </div>
-        )}
+            ) : (
+                <div className="space-y-6">
+                    {filteredPosts.map(post => (
+                        <CardInstitution key={post.id} post={post} />
+                    ))}
+                </div>
+            )}
+        </div>
+
       </div>
     </main>
   )
 }
 
-// COMPOSANT CARTE
+// COMPOSANT CARTE (Inchangé)
 function CardInstitution({ post }) {
     const isPromo = post.type === 'promotion'
     const inst = post.institutions
@@ -151,8 +244,7 @@ function CardInstitution({ post }) {
             
             {/* HEADER CARTE */}
             <div className="p-5 flex items-center justify-between border-b border-slate-50 dark:border-slate-800/50">
-                <div className="flex items-center gap-3">
-                    {/* Logo Institution */}
+                <Link href={`/partners/${inst.id}`} className="flex items-center gap-3 hover:opacity-70 transition-opacity">
                     {inst.logo_url ? (
                         <img src={inst.logo_url} alt={inst.name} className="w-10 h-10 rounded-xl object-cover border border-slate-100 dark:border-slate-700 shadow-sm"/>
                     ) : (
@@ -161,7 +253,6 @@ function CardInstitution({ post }) {
                         </div>
                     )}
                     
-                    {/* Nom + Badge Certifié (COLLÉ AU NOM) */}
                     <div>
                         <h3 className="font-bold text-slate-900 dark:text-white leading-tight flex items-center gap-1.5">
                             {inst.name}
@@ -169,11 +260,12 @@ function CardInstitution({ post }) {
                                 <BadgeCheck size={16} className="text-blue-500 fill-blue-500/10" />
                             )}
                         </h3>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 capitalize">{inst.type === 'private' ? 'Établissement' : inst.type === 'public' ? 'Institution' : 'Association'}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 capitalize hover:underline">
+                            Voir le profil
+                        </p>
                     </div>
-                </div>
+                </Link>
                 
-                {/* BADGE TYPE COLORÉ */}
                 <span className={`text-[10px] font-bold px-3 py-1.5 rounded-lg uppercase tracking-wide border ${
                     isPromo 
                     ? 'bg-orange-50 dark:bg-orange-900/10 text-orange-600 dark:text-orange-400 border-orange-100 dark:border-orange-900/30' 
@@ -189,7 +281,6 @@ function CardInstitution({ post }) {
                     {post.title}
                 </h2>
                 
-                {/* INFO DATE / LIEU */}
                 <div className="flex flex-wrap gap-3 mb-4">
                     {post.start_time && (
                         <div className={`flex items-center gap-1.5 text-xs font-bold px-2.5 py-1.5 rounded-lg ${isPromo ? 'bg-orange-50 text-orange-700 dark:bg-orange-900/20 dark:text-orange-300' : 'bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-300'}`}>
@@ -217,15 +308,17 @@ function CardInstitution({ post }) {
                     )}
                 </div>
 
-                {/* BOUTON ACTION */}
-                {inst.website && (
+                {inst.website ? (
                     <a href={inst.website} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-bold text-sm bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:opacity-90 transition shadow-lg shadow-slate-500/10">
-                        En savoir plus <ExternalLink size={14}/>
+                        Visiter le site officiel <ExternalLink size={14}/>
                     </a>
+                ) : (
+                    <Link href={`/partners/${inst.id}`} className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-bold text-sm bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+                        Voir la fiche partenaire <User size={14}/>
+                    </Link>
                 )}
             </div>
 
-            {/* FOOTER MENTIONS */}
             {(post.legal_mentions || post.description?.toLowerCase().includes('alcool') || post.title?.toLowerCase().includes('bar')) && (
                 <div className="px-5 py-3 bg-slate-50 dark:bg-slate-950/50 border-t border-slate-100 dark:border-slate-800 flex items-center justify-center">
                     <p className="text-[10px] font-medium text-slate-400 flex items-center gap-1.5">

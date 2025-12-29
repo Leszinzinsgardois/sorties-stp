@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -24,7 +23,6 @@ export default function PartnerProfilePage() {
 
   async function fetchPublicData() {
     try {
-      // 1. Récupérer les infos publiques du partenaire
       const { data: inst, error: instError } = await supabase
         .from('institutions')
         .select('*')
@@ -37,7 +35,6 @@ export default function PartnerProfilePage() {
       }
       setPartner(inst)
 
-      // 2. Récupérer ses événements publics (tout sauf archivés)
       const { data: evts } = await supabase
         .from('institutional_events')
         .select('*')
@@ -54,6 +51,23 @@ export default function PartnerProfilePage() {
     }
   }
 
+  // Fonction utilitaire pour le libellé propre
+  const getTypeLabel = (p) => {
+      if (p.type === 'private') return 'Établissement Privé'
+      if (p.type === 'public') return 'Institution Publique'
+      if (p.type === 'association') {
+          const map = {
+              'etudiante': 'Association Étudiante (BDE/Corpo)',
+              '1901': 'Association Loi 1901',
+              'sportive': 'Association Sportive',
+              'culturelle': 'Association Culturelle',
+              'autre': 'Association'
+          }
+          return map[p.association_type] || 'Association'
+      }
+      return 'Structure'
+  }
+
   if (loading) return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
@@ -65,12 +79,10 @@ export default function PartnerProfilePage() {
   return (
     <main className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors pb-24">
       
-      {/* 1. HEADER / COUVERTURE (Style Identique Dashboard) */}
+      {/* HEADER (Inchangé) */}
       <div className="relative h-48 md:h-64 w-full bg-slate-900 overflow-hidden">
-          {/* Motif de fond abstrait */}
           <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-indigo-600/20 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/3"></div>
           <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-blue-600/10 rounded-full blur-[100px] translate-y-1/2 -translate-x-1/4"></div>
-          
           <div className="container mx-auto px-6 h-full flex items-start pt-8 relative z-10">
             <Link href="/partners" className="bg-white/10 hover:bg-white/20 text-white p-2.5 rounded-full backdrop-blur-md transition-all border border-white/10">
                 <ArrowLeft size={20} />
@@ -81,12 +93,10 @@ export default function PartnerProfilePage() {
       <div className="container mx-auto px-6 -mt-20 relative z-10">
         <div className="flex flex-col lg:flex-row gap-8 items-start">
             
-            {/* 2. CARTE D'IDENTITÉ (Gauche - Sticky sur Desktop) */}
+            {/* 2. CARTE D'IDENTITÉ (Gauche) */}
             <div className="w-full lg:w-1/3 space-y-6 lg:sticky lg:top-8">
                 
-                {/* BLOC PRINCIPAL */}
                 <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-200 dark:border-slate-800 text-center relative overflow-hidden">
-                    {/* Logo */}
                     <div className="w-32 h-32 mx-auto bg-slate-50 dark:bg-slate-800 rounded-2xl border-4 border-white dark:border-slate-800 shadow-lg mb-4 overflow-hidden flex items-center justify-center relative z-10">
                         {partner.logo_url ? (
                             <img src={partner.logo_url} alt={partner.name} className="w-full h-full object-cover" />
@@ -97,12 +107,11 @@ export default function PartnerProfilePage() {
 
                     <h1 className="text-2xl font-black text-slate-900 dark:text-white mb-1">{partner.name}</h1>
                     
-                    {/* Type d'établissement */}
+                    {/* C'est ICI qu'on utilise la nouvelle fonction */}
                     <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-6">
-                        {partner.type === 'association' ? 'Association Étudiante' : partner.type === 'public' ? 'Institution Publique' : 'Établissement Privé'}
+                        {getTypeLabel(partner)}
                     </p>
 
-                    {/* Badges de Confiance (Design unifié) */}
                     <div className="flex flex-col gap-2 mb-6">
                         {partner.is_verified && (
                             <div className="w-full flex items-center justify-center gap-2 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 py-2 rounded-xl text-xs font-bold border border-green-100 dark:border-green-900/30">
@@ -116,7 +125,6 @@ export default function PartnerProfilePage() {
                         )}
                     </div>
 
-                    {/* Boutons d'action */}
                     {partner.website && (
                         <a href={partner.website} target="_blank" rel="noopener noreferrer" className="w-full py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors">
                             <Globe size={16}/> Site Internet <ExternalLink size={12} className="opacity-50"/>
@@ -124,7 +132,6 @@ export default function PartnerProfilePage() {
                     )}
                 </div>
 
-                {/* BLOC DESCRIPTION & INFOS */}
                 <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
                     <h3 className="font-bold text-slate-900 dark:text-white mb-3 text-sm uppercase tracking-wide">À propos</h3>
                     <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed mb-6">
@@ -147,7 +154,7 @@ export default function PartnerProfilePage() {
 
             </div>
 
-            {/* 3. FEED D'ACTUALITÉ (Droite) */}
+            {/* 3. FEED (Inchangé) */}
             <div className="w-full lg:w-2/3">
                 <div className="mb-6 flex items-end justify-between px-2">
                     <h2 className="text-2xl font-black text-slate-900 dark:text-white">Actualités</h2>
@@ -159,14 +166,10 @@ export default function PartnerProfilePage() {
                 <div className="space-y-6">
                     {events.map(event => (
                         <div key={event.id} className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-indigo-500/30 dark:hover:border-indigo-500/30 transition-all duration-300 group relative overflow-hidden">
-                            
-                            {/* Bandeau latéral de couleur selon le type */}
                             <div className={`absolute top-0 left-0 w-1.5 h-full 
                                 ${event.type === 'promotion' ? 'bg-orange-500' : event.type === 'communication' ? 'bg-blue-500' : 'bg-purple-600'}`} 
                             />
-
                             <div className="pl-4">
-                                {/* Header Event */}
                                 <div className="flex flex-wrap justify-between items-start mb-3 gap-2">
                                     <div className="flex items-center gap-2">
                                         <span className={`text-[10px] font-bold px-2.5 py-1 rounded-lg uppercase tracking-wider
@@ -183,14 +186,10 @@ export default function PartnerProfilePage() {
                                         <Clock size={12}/> {new Date(event.created_at).toLocaleDateString()}
                                     </span>
                                 </div>
-
-                                {/* Contenu */}
                                 <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{event.title}</h3>
                                 <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed mb-6 whitespace-pre-line">
                                     {event.description}
                                 </p>
-
-                                {/* Footer Event (Infos pratiques) */}
                                 {(event.start_time || event.location) && (
                                     <div className="flex flex-wrap gap-4 pt-4 border-t border-slate-100 dark:border-slate-800">
                                         {event.start_time && (
@@ -208,8 +207,6 @@ export default function PartnerProfilePage() {
                                         )}
                                     </div>
                                 )}
-
-                                {/* Mentions Légales */}
                                 {event.legal_mentions && (
                                     <p className="mt-4 text-[10px] text-slate-400 italic border-t border-dashed border-slate-100 dark:border-slate-800 pt-2">
                                         * {event.legal_mentions}

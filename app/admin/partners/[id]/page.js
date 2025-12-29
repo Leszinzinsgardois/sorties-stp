@@ -17,13 +17,10 @@ export default function AdminPartnerDetail() {
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
   
-  // États pour le formulaire Institution
-  // On initialise representative_info pour éviter les erreurs si c'est null en base
   const [formData, setFormData] = useState({
     representative_info: { nom: '', prenom: '', role: '', email: '', phone: '' }
   })
   
-  // États pour le formulaire Événement (Modal)
   const [showEventModal, setShowEventModal] = useState(false)
   const [editingEvent, setEditingEvent] = useState(null)
   const [eventForm, setEventForm] = useState({ title: '', type: 'event', status: 'active' })
@@ -33,22 +30,20 @@ export default function AdminPartnerDetail() {
   }, [])
 
   async function fetchData() {
-    // 1. Récupérer l'Institution
     const { data: inst } = await supabase.from('institutions').select('*').eq('id', id).single()
     if (inst) {
-        // Sécurité : si representative_info est null, on met un objet vide
         if (!inst.representative_info) inst.representative_info = { nom: '', prenom: '', role: '', email: '', phone: '' }
+        // On s'assure que association_type existe (au cas où vieux profil)
+        if (!inst.association_type) inst.association_type = ''
         setFormData(inst)
     }
 
-    // 2. Récupérer ses Événements
     const { data: evts } = await supabase.from('institutional_events').select('*').eq('institution_id', id).order('created_at', { ascending: false })
     if (evts) setEvents(evts)
     
     setLoading(false)
   }
 
-  // --- GESTION DES INPUTS IMBRIQUÉS (JSON) ---
   const handleRepChange = (field, value) => {
     setFormData(prev => ({
         ...prev,
@@ -59,9 +54,13 @@ export default function AdminPartnerDetail() {
     }))
   }
 
-  // --- LOGIQUE INSTITUTION ---
   async function updatePartner() {
-    const { error } = await supabase.from('institutions').update(formData).eq('id', id)
+    const payload = {
+        ...formData,
+        // Si on change le type pour autre chose qu'association, on vide le sous-type
+        association_type: formData.type === 'association' ? formData.association_type : null
+    }
+    const { error } = await supabase.from('institutions').update(payload).eq('id', id)
     if (error) alert("Erreur update: " + error.message)
     else alert("Fiche mise à jour avec succès ✅")
   }
@@ -72,7 +71,6 @@ export default function AdminPartnerDetail() {
     router.push('/admin/partners')
   }
 
-  // --- LOGIQUE ÉVÉNEMENTS ---
   function openEventModal(event = null) {
       if (event) {
           setEditingEvent(event)
@@ -155,11 +153,33 @@ export default function AdminPartnerDetail() {
                             <option value="association">Association</option>
                         </select>
                     </div>
+                    {/* SOUS TYPE */}
+                    {formData.type === 'association' ? (
+                        <div>
+                            <label className="text-xs font-bold text-blue-500 uppercase">Catégorie</label>
+                            <select className="w-full bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-2 text-sm dark:text-white text-blue-900 font-medium" value={formData.association_type || ''} onChange={e => setFormData({...formData, association_type: e.target.value})}>
+                                <option value="">-- Choisir --</option>
+                                <option value="etudiante">Étudiante (BDE/Corpo)</option>
+                                <option value="1901">Loi 1901 (Générale)</option>
+                                <option value="sportive">Sportive (AS)</option>
+                                <option value="culturelle">Culturelle / Artistique</option>
+                                <option value="autre">Autre</option>
+                            </select>
+                        </div>
+                    ) : (
+                        <div>
+                            <label className="text-xs font-bold text-slate-500 uppercase">SIRET</label>
+                            <input type="text" className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm dark:text-white" value={formData.siret || ''} onChange={e => setFormData({...formData, siret: e.target.value})} />
+                        </div>
+                    )}
+                </div>
+                
+                {formData.type === 'association' && (
                     <div>
-                        <label className="text-xs font-bold text-slate-500 uppercase">SIRET</label>
+                        <label className="text-xs font-bold text-slate-500 uppercase">RNA / SIRET</label>
                         <input type="text" className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm dark:text-white" value={formData.siret || ''} onChange={e => setFormData({...formData, siret: e.target.value})} />
                     </div>
-                </div>
+                )}
                 
                 <div>
                     <label className="text-xs font-bold text-slate-500 uppercase">Description</label>
@@ -243,7 +263,7 @@ export default function AdminPartnerDetail() {
             </div>
         </div>
 
-        {/* === COLONNE DROITE : GESTION DES ÉVÉNEMENTS === */}
+        {/* === COLONNE DROITE : GESTION DES ÉVÉNEMENTS (Reste inchangé) === */}
         <div className="lg:col-span-2">
             <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 min-h-[500px]">
                 <div className="flex justify-between items-center mb-6">
@@ -276,7 +296,7 @@ export default function AdminPartnerDetail() {
 
       </div>
 
-      {/* MODAL ÉDITION ÉVÉNEMENT */}
+      {/* MODAL ÉDITION ÉVÉNEMENT (Inchangé) */}
       {showEventModal && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
               <div className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 relative">
