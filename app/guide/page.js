@@ -309,8 +309,8 @@ export default function Guide() {
                   </div>
                   {/* CARD: OUKONSORT AI (Teaser) - 2 cols */}
                    <div className="md:col-span-2 relative p-1 rounded-3xl overflow-hidden group">
-                      {/* Bordure animée */}
-                      <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 animate-[spin_4s_linear_infinite] opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                      {/* Bordure animée FLUIDE */}
+                      <div className="absolute inset-[-50%] bg-[conic-gradient(from_0deg,transparent_0_340deg,#a855f7_360deg)] animate-[spin_4s_linear_infinite] opacity-50 group-hover:opacity-100 transition-opacity"></div>
                       <div className="absolute inset-[2px] bg-slate-900 rounded-[22px] z-0"></div>
 
                       <div className="relative z-10 p-8 h-full flex flex-col justify-center">
@@ -328,7 +328,7 @@ export default function Guide() {
 
                            <p className="text-slate-400 text-sm mb-6 leading-relaxed max-w-md">
                                On entraîne une IA capable de générer ta soirée parfaite en une phrase.
-                               <br/>"Soirée posée, 10 personnes, budget serré." 👉 <strong className="text-purple-300">Boom, tout est prêt.</strong>
+                               <br/>"Soirée posée, 10 personnes, budget serré." 👉 <strong className="text-purple-300">Boom, tout est suggéré par l'IA, à toi de compléter ou laisser tel quel !</strong>
                            </p>
 
                            <div className="flex items-center gap-2 text-xs font-mono text-purple-400/80 bg-purple-900/20 w-fit px-3 py-1.5 rounded-lg border border-purple-500/20">
