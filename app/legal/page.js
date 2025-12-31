@@ -1,10 +1,30 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Scale, FileText, ShieldCheck } from 'lucide-react'
+import Link from 'next/link'
+import { 
+  ArrowLeft, Scale, FileText, ShieldCheck, 
+  HeartHandshake, Briefcase, UserX, ChevronRight, ArrowDownCircle 
+} from 'lucide-react'
+
+// --- ⚙️ ZONE DE CONFIGURATION DES VERSIONS ---
+const VERSIONS = {
+  CEU: "v1.0",       // Version Charte Utilisateur
+  CEP: "v1.0 (Standard)",   // Version Charte Partenaire
+  DELETION: "v1.2 (RGPD)"   // Version Procédure Suppression
+}
+// ----------------------------------------------
 
 export default function LegalPage() {
   const router = useRouter()
+
+  // Fonction pour scroller en douceur
+  const scrollToMentions = () => {
+    const element = document.getElementById('mentions-legales')
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }
 
   return (
     <main className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors pb-20">
@@ -18,14 +38,98 @@ export default function LegalPage() {
           <ArrowLeft size={20} />
         </button>
         <h1 className="text-xl font-bold text-slate-800 dark:text-white">
-          Mentions Légales & CGU
+          Centre Légal & Éthique
         </h1>
       </div>
 
       <div className="max-w-3xl mx-auto p-6 space-y-8">
+
+        {/* --- SECTION ACCÈS RAPIDE (Grille 2x2) --- */}
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            
+            {/* BOUTON 1 : MENTIONS LÉGALES (SCROLL) */}
+            <button 
+                onClick={scrollToMentions} 
+                className="group bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-600 transition-all hover:shadow-md flex flex-col justify-between h-full text-left relative overflow-hidden"
+            >
+                <div>
+                    <div className="flex justify-between items-start mb-3">
+                        <div className="bg-slate-100 dark:bg-slate-800 w-10 h-10 rounded-lg flex items-center justify-center text-slate-600 dark:text-slate-400 group-hover:scale-110 transition-transform">
+                            <ArrowDownCircle size={20}/>
+                        </div>
+                    </div>
+                    <h3 className="font-bold text-slate-900 dark:text-white text-sm mb-1">Lire les Mentions Légales</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Accès direct au bas de page (Éditeur, Hébergeur...)</p>
+                </div>
+                <div className="flex items-center gap-1 text-slate-600 dark:text-slate-400 text-xs font-bold mt-4 group-hover:gap-2 transition-all">
+                    Scroller <ChevronRight size={14}/>
+                </div>
+            </button>
+
+            {/* BOUTON 2 : CEU */}
+            <Link href="/legal/ceu" className="group bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-blue-500 dark:hover:border-blue-500 transition-all hover:shadow-md flex flex-col justify-between h-full">
+                <div>
+                    <div className="flex justify-between items-start mb-3">
+                        <div className="bg-blue-50 dark:bg-blue-900/20 w-10 h-10 rounded-lg flex items-center justify-center text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform">
+                            <HeartHandshake size={20}/>
+                        </div>
+                        {/* BADGE VERSION */}
+                        <span className="bg-slate-100 dark:bg-slate-800 text-slate-500 text-[10px] font-mono px-2 py-1 rounded-md border border-slate-200 dark:border-slate-700">
+                            {VERSIONS.CEU}
+                        </span>
+                    </div>
+                    <h3 className="font-bold text-slate-900 dark:text-white text-sm mb-1">Charte d'Éthique Utilisateur (CEU)</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Respect, savoir-vivre et règles de la communauté.</p>
+                </div>
+                <div className="flex items-center gap-1 text-blue-600 dark:text-blue-400 text-xs font-bold mt-4 group-hover:gap-2 transition-all">
+                    Consulter <ChevronRight size={14}/>
+                </div>
+            </Link>
+
+            {/* BOUTON 3 : CEP */}
+            <Link href="/legal/cep" className="group bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-purple-500 dark:hover:border-purple-500 transition-all hover:shadow-md flex flex-col justify-between h-full">
+                <div>
+                    <div className="flex justify-between items-start mb-3">
+                        <div className="bg-purple-50 dark:bg-purple-900/20 w-10 h-10 rounded-lg flex items-center justify-center text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform">
+                            <Briefcase size={20}/>
+                        </div>
+                        {/* BADGE VERSION */}
+                        <span className="bg-slate-100 dark:bg-slate-800 text-slate-500 text-[10px] font-mono px-2 py-1 rounded-md border border-slate-200 dark:border-slate-700">
+                            {VERSIONS.CEP}
+                        </span>
+                    </div>
+                    <h3 className="font-bold text-slate-900 dark:text-white text-sm mb-1">Charte Partenaire (CEP)</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Engagements des Assos et Pros.</p>
+                </div>
+                <div className="flex items-center gap-1 text-purple-600 dark:text-purple-400 text-xs font-bold mt-4 group-hover:gap-2 transition-all">
+                    Consulter <ChevronRight size={14}/>
+                </div>
+            </Link>
+
+            {/* BOUTON 4 : SUPPRESSION */}
+            <Link href="/legal/deletion" className="group bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-red-500 dark:hover:border-red-500 transition-all hover:shadow-md flex flex-col justify-between h-full">
+                <div>
+                    <div className="flex justify-between items-start mb-3">
+                        <div className="bg-red-50 dark:bg-red-900/20 w-10 h-10 rounded-lg flex items-center justify-center text-red-600 dark:text-red-400 group-hover:scale-110 transition-transform">
+                            <UserX size={20}/>
+                        </div>
+                        {/* BADGE VERSION */}
+                        <span className="bg-slate-100 dark:bg-slate-800 text-slate-500 text-[10px] font-mono px-2 py-1 rounded-md border border-slate-200 dark:border-slate-700">
+                            {VERSIONS.DELETION}
+                        </span>
+                    </div>
+                    <h3 className="font-bold text-slate-900 dark:text-white text-sm mb-1">Suppression & Sanctions</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Clôture de compte et modération.</p>
+                </div>
+                <div className="flex items-center gap-1 text-red-600 dark:text-red-400 text-xs font-bold mt-4 group-hover:gap-2 transition-all">
+                    Voir procédure <ChevronRight size={14}/>
+                </div>
+            </Link>
+
+        </section>
         
-        {/* I. MENTIONS LÉGALES */}
-        <section className="bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 space-y-4">
+        {/* I. MENTIONS LÉGALES (CIBLE DU SCROLL) */}
+        <section id="mentions-legales" className="bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 space-y-4 scroll-mt-24">
           <h2 className="text-2xl font-bold text-blue-600 dark:text-blue-400 flex items-center gap-2">
             <Scale size={24}/> I. Mentions légales
           </h2>

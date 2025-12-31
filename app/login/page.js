@@ -220,7 +220,7 @@ export default function LoginPage() {
                <div className="flex items-start gap-3 pt-2">
                 <input id="terms" type="checkbox" required checked={termsAccepted} onChange={(e) => setTermsAccepted(e.target.checked)} className="mt-1" />
                 <div className="text-xs text-slate-600 dark:text-slate-400">
-                  <label htmlFor="terms">Je certifie avoir +16 ans et j'accepte les <Link href="/legal" className="text-blue-500 underline">CGU</Link>.</label>
+                  <label htmlFor="terms">Je certifie avoir +16 ans et j'accepte les <Link href="/legal" className="text-blue-500 underline">CGU</Link> ainsi que la <Link href="/legal/ceu" className="text-blue-500 underline">Charte d'Éthique Utilisateur</Link>.</label>
                   <p className="mt-1 opacity-70">Mineurs sous responsabilité légale.</p>
                 </div>
                </div>
