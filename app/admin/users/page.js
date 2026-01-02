@@ -5,19 +5,19 @@ import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { 
-  ArrowLeft, Search, User, ShieldAlert, BadgeCheck, 
-  Mail, Calendar, Fingerprint, History, AlertTriangle, 
-  Ban, CheckCircle, XCircle, Clock, MapPin, Trash2, Archive 
+  ArrowLeft, Search, User, BadgeCheck, 
+  Mail, History, AlertTriangle, 
+  CheckCircle, XCircle, Clock, Trash2, ShieldCheck 
 } from 'lucide-react'
 
 export default function AdminUsersPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState('active') // 'active' ou 'deleted'
+  const [activeTab, setActiveTab] = useState('active') 
   
   // Données
   const [users, setUsers] = useState([])
-  const [deletedUsers, setDeletedUsers] = useState([]) // Table archives
+  const [deletedUsers, setDeletedUsers] = useState([]) 
   const [selectedUser, setSelectedUser] = useState(null)
   
   // Détails chargés à la demande
@@ -45,7 +45,6 @@ export default function AdminUsersPage() {
     Promise.all([fetchActiveUsers(), fetchDeletedUsers()]).then(() => setLoading(false))
   }
 
-  // 1. Récupérer les utilisateurs ACTIFS (y compris ceux en cours de suppression)
   async function fetchActiveUsers() {
     const { data } = await supabase
       .from('profiles')
@@ -54,7 +53,6 @@ export default function AdminUsersPage() {
     setUsers(data || [])
   }
 
-  // 2. Récupérer les archives (Utilisateurs supprimés définitivement)
   async function fetchDeletedUsers() {
     const { data } = await supabase
       .from('deleted_users')
@@ -63,20 +61,15 @@ export default function AdminUsersPage() {
     setDeletedUsers(data || [])
   }
 
-  // 3. Sélectionner un utilisateur (Logique différente selon le type)
   async function handleSelectUser(user, isArchived = false) {
-    // On ajoute un flag pour savoir si c'est une archive
     const userWithContext = { ...user, isArchived }
     setSelectedUser(userWithContext)
     setLoadingDetails(true)
 
     if (isArchived) {
-        // Pour les archivés, on n'a pas d'events ni de logs (car tout est supprimé en cascade)
-        // On vide juste les détails
         setUserDetails({ events: [], sanctions: [] })
         setLoadingDetails(false)
     } else {
-        // Pour les actifs, on charge tout
         const { data: userEvents } = await supabase
             .from('events')
             .select('*, reports(count)')
@@ -98,7 +91,6 @@ export default function AdminUsersPage() {
     }
   }
 
-  // Helper pour calculer l'âge
   const calculateAge = (dateString) => {
     if (!dateString) return '?'
     const today = new Date()
@@ -109,7 +101,6 @@ export default function AdminUsersPage() {
     return age
   }
 
-  // Helper pour calculer les jours restants avant suppression définitive
   const getDaysRemaining = (deletedAt) => {
     if (!deletedAt) return null
     const deleteDate = new Date(deletedAt)
@@ -120,13 +111,12 @@ export default function AdminUsersPage() {
     return diffDays > 0 ? diffDays : 0
   }
 
-  // Filtrage intelligent selon l'onglet actif
   const currentList = activeTab === 'active' ? users : deletedUsers
   const filteredList = currentList.filter(u => {
     const term = searchTerm.toLowerCase()
     return (
       (u.pseudo || '').toLowerCase().includes(term) ||
-      (u.email || '').toLowerCase().includes(term) || // Recherche email pour les archivés
+      (u.email || '').toLowerCase().includes(term) || 
       (u.prenom || '').toLowerCase().includes(term) ||
       (u.nom || '').toLowerCase().includes(term) ||
       (u.id || '').toLowerCase().includes(term)
@@ -266,12 +256,9 @@ export default function AdminUsersPage() {
                             <BadgeCheck size={14}/> État Civil
                         </h3>
                         
-                        {/* LOGIQUE D'AFFICHAGE CONDITIONNEL (Phase 1 vs Phase 2) */}
                         {selectedUser.isArchived && !selectedUser.nom ? (
-                            // Phase 2 : > 1 an (Anonymisé)
                             <p className="text-sm text-slate-400 italic">Données personnelles purgées (RGPD).</p>
                         ) : (
-                            // Phase 1 (Archivé récent) OU Actif : On affiche tout
                             <>
                                 <div>
                                     <p className="text-xs text-slate-400">Nom complet</p>
@@ -292,18 +279,34 @@ export default function AdminUsersPage() {
                             </>
                         )}
                         
+                        {/* --- MODIFICATION ICI : AJOUT DU BADGE EMAIL --- */}
                         <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
                             <p className="text-xs text-slate-400 mb-1 flex items-center gap-1"><Mail size={10}/> Email</p>
-                            <p className="font-mono text-sm text-slate-700 dark:text-slate-300">
-                                {selectedUser.isArchived ? selectedUser.email : "Masqué (Voir Auth ou Base)"}
-                            </p>
+                            <div className="flex items-center justify-between">
+                                <p className="font-mono text-sm text-slate-700 dark:text-slate-300 truncate pr-2">
+                                    {selectedUser.isArchived ? selectedUser.email : (selectedUser.email || "Masqué")}
+                                </p>
+                                
+                                {/* Badge de vérification */}
+                                {selectedUser.email_confirmed_at ? (
+                                    <span className="flex items-center gap-1 text-[10px] font-bold bg-green-100 text-green-700 px-2 py-0.5 rounded-full border border-green-200">
+                                        <CheckCircle size={10}/> Vérifié
+                                    </span>
+                                ) : (
+                                    <span className="flex items-center gap-1 text-[10px] font-bold bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full border border-orange-200">
+                                        <AlertTriangle size={10}/> Non vérifié
+                                    </span>
+                                )}
+                            </div>
                         </div>
+                        {/* ----------------------------------------------- */}
+
                     </div>
 
-                    {/* IDs Système */}
+                    {/* IDs Système - Identifiants Système */}
                     <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 space-y-4">
                         <h3 className="font-bold text-slate-500 uppercase text-xs flex items-center gap-2 mb-2">
-                            <Fingerprint size={14}/> Identifiants Système
+                            <ShieldCheck size={14}/> Identifiants Système
                         </h3>
                         <div>
                             <p className="text-xs text-slate-400 mb-1">ID Unique</p>
@@ -322,7 +325,7 @@ export default function AdminUsersPage() {
                     </div>
                 </div>
 
-                {/* 4. HISTORIQUE SANCTIONS (Si non archivé) */}
+                {/* 4. HISTORIQUE SANCTIONS */}
                 {!selectedUser.isArchived && (
                     <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
                         <h3 className="font-bold text-red-600 dark:text-red-400 uppercase text-xs flex items-center gap-2 mb-4">
@@ -347,7 +350,7 @@ export default function AdminUsersPage() {
                     </div>
                 )}
 
-                {/* 5. HISTORIQUE ÉVÉNEMENTS (Si non archivé) */}
+                {/* 5. HISTORIQUE ÉVÉNEMENTS */}
                 {!selectedUser.isArchived && (
                     <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
                         <h3 className="font-bold text-slate-500 uppercase text-xs flex items-center gap-2 mb-4">
@@ -363,7 +366,7 @@ export default function AdminUsersPage() {
                                         <div className="min-w-0">
                                             <h4 className="font-bold text-sm text-slate-800 dark:text-white truncate">{evt.title}</h4>
                                             <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
-                                                <Calendar size={10}/> {new Date(evt.start_time).toLocaleDateString()}
+                                                <Clock size={10}/> {new Date(evt.start_time).toLocaleDateString()}
                                             </p>
                                         </div>
                                     </div>
