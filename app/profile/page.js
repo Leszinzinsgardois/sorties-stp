@@ -4,11 +4,15 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Save, Trash2, Lock, User, ShieldCheck, ScanFace, IdCard, AlertCircle } from 'lucide-react'
+import { 
+  ArrowLeft, Save, Trash2, Lock, User, ShieldCheck, 
+  ScanFace, IdCard, AlertCircle, FileJson, Mail, Database 
+} from 'lucide-react'
 
 export default function ProfilePage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
+  const [isExporting, setIsExporting] = useState(false) // État pour le chargement de l'export
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
 
@@ -23,8 +27,7 @@ export default function ProfilePage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/login'); return }
     setUser(user)
-    // On n'a plus besoin de stocker l'email dans un state modifiable
-
+    
     const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
     setProfile(data)
     setLoading(false)
@@ -49,6 +52,41 @@ export default function ProfilePage() {
     else {
         alert("Mot de passe modifié avec succès !")
         setPasswords({ current: '', new: '', confirm: '' })
+    }
+  }
+
+  // --- EXPORT DONNÉES (Portabilité) ---
+  async function handleExportData() {
+    setIsExporting(true)
+    try {
+        // 1. Récupérer les événements créés par l'utilisateur
+        const { data: myEvents } = await supabase
+            .from('events')
+            .select('*')
+            .eq('organizer_id', user.id)
+
+        // 2. Construire l'objet JSON
+        const exportData = {
+            _info: "Export des données personnelles - Oukonsort",
+            _date: new Date().toISOString(),
+            _notice: "L'historique des signalements et des modifications techniques est exclu de cet export. Ces données sont conservées uniquement par le Staff à des fins de sécurité et de modération.", // <--- LIGNE À AJOUTER ICI
+            profile: profile,
+            created_events: myEvents || [],
+        }
+
+        // 3. Créer le fichier et déclencher le téléchargement
+        const jsonString = `data:text/json;chatset=utf-8,${encodeURIComponent(
+            JSON.stringify(exportData, null, 2)
+        )}`
+        const link = document.createElement("a")
+        link.href = jsonString
+        link.download = `oukonsort_data_${profile.pseudo}_${new Date().getTime()}.json`
+        link.click()
+
+    } catch (error) {
+        alert("Erreur lors de l'export : " + error.message)
+    } finally {
+        setIsExporting(false)
     }
   }
 
@@ -107,7 +145,48 @@ export default function ProfilePage() {
             </p>
         </section>
 
-        {/* 2. VÉRIFICATION CNI */}
+        {/* 2. GESTION DES DONNÉES (RGPD) - NOUVELLE SECTION */}
+        <section className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 space-y-6">
+            <h2 className="font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                <Database size={20} className="text-indigo-500"/> Mes Données (RGPD)
+            </h2>
+
+            {/* Rectification */}
+            <div className="space-y-2">
+                <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200">Droit à la rectification</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Votre identité est verrouillée pour des raisons de sécurité. En cas d'erreur de saisie ou de changement d'état civil, vous pouvez contacter le DPO. (Veuillez NE PAS changer l'objet du mail)
+                </p>
+                <a 
+                    href={`mailto:antoinef30350@icloud.com?subject=Rectification identité - ID: ${user?.id}&body=Bonjour, je souhaite rectifier mes informations personnelles suivantes :`}
+                    className="inline-flex items-center gap-2 text-sm font-bold text-indigo-600 dark:text-indigo-400 hover:underline mt-1"
+                >
+                    <Mail size={16}/> Contacter le support pour rectification
+                </a>
+            </div>
+
+            <hr className="border-slate-100 dark:border-slate-800" />
+
+            {/* Portabilité */}
+            <div className="space-y-2">
+                <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200">Portabilité des données</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Vous pouvez télécharger une copie de vos données personnelles et de votre historique au format JSON.
+                </p>
+                <p className="text-[10px] text-slate-400 mt-2 italic">
+                    * Pour des raisons de sécurité, l'historique des signalements et des modifications n'est pas inclus dans cet export.
+                </p>
+                <button 
+                    onClick={handleExportData} 
+                    disabled={isExporting}
+                    className="w-full sm:w-auto px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-bold rounded-xl transition flex items-center justify-center gap-2"
+                >
+                    {isExporting ? 'Génération...' : <><FileJson size={16}/> Exporter mes données (JSON)</>}
+                </button>
+            </div>
+        </section>
+
+        {/* 3. VÉRIFICATION CNI */}
         <section className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 relative overflow-hidden">
             <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
                 <IdCard size={100} />
@@ -134,7 +213,7 @@ export default function ProfilePage() {
             </div>
         </section>
 
-        {/* 3. SÉCURITÉ (Email & Mdp) */}
+        {/* 4. SÉCURITÉ (Email & Mdp) */}
         <section className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 space-y-6">
             <h2 className="font-bold text-slate-800 dark:text-white flex items-center gap-2"><Lock size={20} className="text-purple-500"/> Sécurité & Connexion</h2>
             
@@ -183,7 +262,7 @@ export default function ProfilePage() {
             </div>
         </section>
 
-        {/* 4. DANGER ZONE */}
+        {/* 5. DANGER ZONE */}
         <section className="bg-red-50 dark:bg-red-900/10 p-6 rounded-3xl border border-red-100 dark:border-red-900/30 space-y-4">
             <h2 className="font-bold text-red-600 dark:text-red-400 flex items-center gap-2"><Trash2 size={20}/> Zone de Danger</h2>
             <p className="text-sm text-red-800 dark:text-red-300">

@@ -1,13 +1,13 @@
 import './globals.css'
 import { Inter } from 'next/font/google'
-import { GoogleAnalytics } from '@next/third-parties/google' // <--- 1. IMPORT ICI
+// On retire l'import direct de GoogleAnalytics ici
 import Header from '@/components/Header' 
+import CookieConsent from '@/components/CookieConsent' // <--- IMPORT DU NOUVEAU COMPOSANT
 
 const inter = Inter({ subsets: ['latin'] })
 
-// --- CONFIGURATION METADATA GLOBALE ---
 export const metadata = {
-  metadataBase: new URL('https://oukonsort.netlify.app'), // (Mets ton URL finale ici quand tu l'auras)
+  metadataBase: new URL('https://oukonsort.netlify.app'),
   title: {
     default: 'Oukonsort - Tes soirées sans galère',
     template: '%s | Oukonsort',
@@ -31,10 +31,12 @@ export default function RootLayout({ children }) {
         <div className="pt-16"> 
             {children}
         </div>
+        
+        {/* LE TRACKER EST GÉRÉ ICI 👇 */}
+        {/* Il ne s'activera que si l'utilisateur clique sur "Accepter" */}
+        <CookieConsent />
+        
       </body>
-      {/* 2. LE TRACKER EST JUSTE ICI 👇 */}
-      {/* Remplace 'G-XXXXXXXXXX' par ton vrai code copié à l'étape 1 */}
-      <GoogleAnalytics gaId="G-RLL11RVSQK" />
     </html>
   )
 }

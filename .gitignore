@@ -2,6 +2,8 @@
 
 # divers
 archives.txt
+ROADMAP.md
+
 # dependencies
 /node_modules
 /.pnp
