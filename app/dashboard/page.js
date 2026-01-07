@@ -27,22 +27,31 @@ export default function Dashboard() {
       .from('events')
       .select('*, participants(count)') 
       .eq('organizer_id', userId)
-      .order('start_time', { ascending: false })
+      // CORRECTION ICI : On trie par 'start_time', pas 'date'
+      .order('start_time', { ascending: false }) 
       
     setEvents(data || [])
     setLoading(false)
   }
 
-  // --- LOGIQUE DE FILTRAGE MISE À JOUR ---
+  // --- LOGIQUE DE FILTRAGE MISE À JOUR (Gestion du cycle de vie) ---
   const filteredEvents = events.filter(event => {
-    if (showArchived) return true 
     
-    // On calcule si l'événement est terminé (Date actuelle > Date événement)
-    const isFinished = new Date(event.start_time) < new Date()
+    // CORRECTION ICI : On utilise start_time pour le calcul du fallback
+    // Si pas de date de fin, on considère que ça finit 4h après le début
+    const endDate = event.end_date 
+        ? new Date(event.end_date) 
+        : new Date(new Date(event.start_time).getTime() + 4 * 60 * 60 * 1000)
     
-    // On affiche l'event SEULEMENT s'il est visible ET qu'il n'est pas encore passé
-    // (Les annulés restent visibles pour que tu puisses les gérer, sauf s'ils sont vieux)
-    return event.is_visible && !isFinished
+    const isFinished = new Date() > endDate
+    
+    if (showArchived) {
+        // Mode Historique : On veut les finis OU les annulés
+        return isFinished || event.is_cancelled
+    } else {
+        // Mode Normal : On veut les futurs ET visibles ET pas annulés
+        return !isFinished && event.is_visible && !event.is_cancelled
+    }
   })
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 text-slate-500">Chargement...</div>
@@ -60,8 +69,8 @@ export default function Dashboard() {
             onClick={() => setShowArchived(!showArchived)}
             className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition ${showArchived ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400'}`}
         >
-            {showArchived ? <Clock size={14}/> : <Filter size={14}/>}
-            {showArchived ? 'Masquer Terminés' : 'Historique'}
+            {showArchived ? <Clock size={14}/> : <Archive size={14}/>}
+            {showArchived ? 'Voir À Venir' : 'Voir Historique'}
         </button>
       </div>
 
@@ -82,10 +91,14 @@ export default function Dashboard() {
           </div>
         ) : (
           filteredEvents.map(event => {
-            // Calcul du statut pour l'affichage (Badge)
-            const isFinished = new Date(event.start_time) < new Date()
+            // CORRECTION ICI : start_time au lieu de date
+            const endDate = event.end_date 
+                ? new Date(event.end_date) 
+                : new Date(new Date(event.start_time).getTime() + 4 * 60 * 60 * 1000)
+            
+            const isFinished = new Date() > endDate
             const isCancelled = event.is_cancelled
-            const isVisible = event.is_visible // Visible manuellement par l'admin
+            const isVisible = event.is_visible 
 
             return (
             <div key={event.id} className={`bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border relative hover:scale-[1.02] transition-transform ${isFinished || !isVisible ? 'opacity-70 border-slate-100 dark:border-slate-800 grayscale-[0.5]' : 'border-slate-100 dark:border-slate-800'} ${isCancelled ? 'border-red-200 dark:border-red-900/30' : ''}`}>
@@ -110,6 +123,7 @@ export default function Dashboard() {
               <div className="space-y-2 text-sm text-slate-600 dark:text-slate-400 mb-5">
                 <div className="flex items-center gap-2">
                   <Calendar size={16} className="text-blue-500"/>
+                  {/* CORRECTION ICI : start_time */}
                   {new Date(event.start_time).toLocaleDateString()} • {new Date(event.start_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                 </div>
                 <div className="flex items-center gap-2">
